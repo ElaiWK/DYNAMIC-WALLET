@@ -197,9 +197,6 @@ def show_form():
     st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
     
     if st.session_state.category == ExpenseCategory.MEAL.value:
-        # Test message to verify connection
-        st.markdown("<h3 style='color: red;'>TEST - Connected and Updated!</h3>", unsafe_allow_html=True)
-        
         # Initialize session state for meal form
         if "meal_total_amount" not in st.session_state:
             st.session_state.meal_total_amount = 0.0
@@ -271,22 +268,20 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Calculate and display amount only once at the end
+        # Calculate and always display amount
         calculated_amount = 0
-        per_person_amount = 0
         if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
             calculated_amount, _ = calculate_meal_expense(
                 st.session_state.meal_total_amount, 
                 st.session_state.meal_num_people, 
                 meal_type
             )
-            per_person_amount = min(st.session_state.meal_total_amount / st.session_state.meal_num_people, 12)
-            st.markdown(f"""
-            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
-                <p style="color: #666; text-align: center; margin: 10px 0 0 0;">Valor por pessoa: {format_currency(per_person_amount)}</p>
-            </div>
-            """, unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.write("")  # Add space before submit button
         
