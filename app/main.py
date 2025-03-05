@@ -941,8 +941,11 @@ def main():
                     desc = desc.replace(f" (Valor: {amount})", "")
                 return desc
             
-            income_df["Description"] = income_df.apply(clean_description, axis=1)
-            expense_df["Description"] = expense_df.apply(clean_description, axis=1)
+            # Only apply clean_description if DataFrames are not empty
+            if not income_df.empty:
+                income_df["Description"] = income_df.apply(clean_description, axis=1)
+            if not expense_df.empty:
+                expense_df["Description"] = expense_df.apply(clean_description, axis=1)
             
             # Display income transactions if they exist
             if not income_df.empty:
