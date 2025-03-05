@@ -64,6 +64,12 @@ st.markdown("""
     .income-button > button:hover {
         background-color: #45a049 !important;
     }
+    .meal-submit-button > button {
+        background-color: #ff4b4b !important;
+    }
+    .meal-submit-button > button:hover {
+        background-color: #e64444 !important;
+    }
     .balance-container {
         padding: 20px;
         border-radius: 10px;
@@ -284,37 +290,30 @@ def show_form():
         
         st.write("")  # Add space before submit button
         
-        # Add submit button with red color
-        st.markdown("""
-        <style>
-        div[data-testid="stButton"] > button[kind="primary"] {
-            background-color: #ff4b4b;
-        }
-        div[data-testid="stButton"] > button[kind="primary"]:hover {
-            background-color: #e64444;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        if st.button("Submeter", key="submit_meal"):
-            amount, error = calculate_meal_expense(
-                st.session_state.meal_total_amount, 
-                st.session_state.meal_num_people, 
-                meal_type
-            )
-            if not error:
-                save_transaction(
-                    st.session_state.meal_date,
-                    TransactionType.EXPENSE.value, 
-                    ExpenseCategory.MEAL.value, 
-                    description, 
-                    amount
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_meal"):
+                amount, error = calculate_meal_expense(
+                    st.session_state.meal_total_amount, 
+                    st.session_state.meal_num_people, 
+                    meal_type
                 )
-                st.success("Transação registrada com sucesso!")
-                st.session_state.page = "main"
-                st.rerun()
-            else:
-                st.error(error)
+                if not error:
+                    save_transaction(
+                        st.session_state.meal_date,
+                        TransactionType.EXPENSE.value, 
+                        ExpenseCategory.MEAL.value, 
+                        description, 
+                        amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    st.session_state.page = "main"
+                    st.rerun()
+                else:
+                    st.error(error)
+            st.markdown('</div>', unsafe_allow_html=True)
     
     else:
         with st.form("transaction_form", clear_on_submit=True):
