@@ -367,6 +367,7 @@ def show_form():
                         meal_type
                     )
                     if not error:
+                        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)}, Valor por pessoa: {format_currency(calculated_amount)})"
                         save_transaction(
                             st.session_state.meal_date,
                             TransactionType.EXPENSE.value, 
@@ -457,7 +458,7 @@ def show_form():
                 if validation_error:
                     st.error(validation_error)
                 else:
-                    description = f"{st.session_state.hr_collaborator} - {st.session_state.hr_role}"
+                    description = f"{st.session_state.hr_collaborator} - {st.session_state.hr_role} (Taxa: {format_currency(HR_RATES[st.session_state.hr_role])})"
                     save_transaction(
                         st.session_state.hr_date,
                         TransactionType.EXPENSE.value,
@@ -558,7 +559,7 @@ def show_form():
                 if validation_error:
                     st.error(validation_error)
                 else:
-                    description = f"{st.session_state.purchase_what} - {st.session_state.purchase_justification}"
+                    description = f"{st.session_state.purchase_what} (Valor: {format_currency(st.session_state.purchase_amount)}) - {st.session_state.purchase_justification}"
                     save_transaction(
                         st.session_state.purchase_date,
                         TransactionType.EXPENSE.value,
@@ -646,7 +647,7 @@ def show_form():
                 if validation_error:
                     st.error(validation_error)
                 else:
-                    description = f"Entregue a {st.session_state.delivery_collaborator}"
+                    description = f"Entregue a {st.session_state.delivery_collaborator} (Valor: {format_currency(st.session_state.delivery_amount)})"
                     save_transaction(
                         st.session_state.delivery_date,
                         TransactionType.EXPENSE.value,
@@ -733,7 +734,7 @@ def show_form():
                 if validation_error:
                     st.error(validation_error)
                 else:
-                    description = f"Serviço #{st.session_state.service_reference}"
+                    description = f"Serviço #{st.session_state.service_reference} (Valor: {format_currency(st.session_state.service_amount)})"
                     save_transaction(
                         st.session_state.service_date,
                         TransactionType.INCOME.value,
@@ -820,7 +821,7 @@ def show_form():
                 if validation_error:
                     st.error(validation_error)
                 else:
-                    description = f"Recebido de {st.session_state.delivery_income_collaborator}"
+                    description = f"Recebido de {st.session_state.delivery_income_collaborator} (Valor: {format_currency(st.session_state.delivery_income_amount)})"
                     save_transaction(
                         st.session_state.delivery_income_date,
                         TransactionType.INCOME.value,
@@ -913,28 +914,45 @@ def main():
             if category_filter != "Todas":
                 filtered_df = filtered_df[filtered_df["Category"] == category_filter]
             
-            # Sort by Type (Entradas first) and Date
-            filtered_df = filtered_df.sort_values(
-                by=["Type", "Date"],
-                ascending=[False, True]  # False for Type puts INCOME (Entradas) first
-            )
+            # Split dataframe by type
+            income_df = filtered_df[filtered_df["Type"] == TransactionType.INCOME.value].copy()
+            expense_df = filtered_df[filtered_df["Type"] == TransactionType.EXPENSE.value].copy()
             
-            # Format the amount column with currency for display
-            filtered_df_display = filtered_df.copy()
-            filtered_df_display["Amount"] = filtered_df_display["Amount"].apply(format_currency)
+            # Sort each dataframe by date
+            income_df = income_df.sort_values("Date", ascending=True)
+            expense_df = expense_df.sort_values("Date", ascending=True)
             
-            # Display the transactions in a table
-            st.dataframe(
-                filtered_df_display,
-                column_config={
-                    "Date": "Data",
-                    "Type": "Tipo",
-                    "Category": "Categoria",
-                    "Description": "Descrição",
-                    "Amount": "Valor"
-                },
-                hide_index=True
-            )
+            # Format amounts for display
+            income_df["Amount"] = income_df["Amount"].apply(format_currency)
+            expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
+            
+            # Display income transactions if they exist
+            if not income_df.empty:
+                st.subheader("Entradas")
+                st.dataframe(
+                    income_df.drop("Type", axis=1),  # Remove Type column
+                    column_config={
+                        "Date": "Data",
+                        "Category": "Categoria",
+                        "Description": "Descrição",
+                        "Amount": "Valor"
+                    },
+                    hide_index=True
+                )
+            
+            # Display expense transactions if they exist
+            if not expense_df.empty:
+                st.subheader("Saídas")
+                st.dataframe(
+                    expense_df.drop("Type", axis=1),  # Remove Type column
+                    column_config={
+                        "Date": "Data",
+                        "Category": "Categoria",
+                        "Description": "Descrição",
+                        "Amount": "Valor"
+                    },
+                    hide_index=True
+                )
             
             # Calculate summary statistics
             total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
