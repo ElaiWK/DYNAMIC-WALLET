@@ -1085,60 +1085,9 @@ def show_history_tab():
         st.info("Não existem relatórios guardados.")
         return
 
-    # Create a list to store the flattened data
-    table_data = []
-    
-    for report in st.session_state.history:
-        # Add row to table data using the stored summary
-        table_data.append({
-            'Relatório #': report['number'],
-            'Total Entradas': report['summary']['total_income'],
-            'Total Saídas': report['summary']['total_expense'],
-            'Saldo': abs(report['summary']['net_amount']),
-            'Status': 'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'
-        })
-    
-    # Create DataFrame for summary table
-    df = pd.DataFrame(table_data)
-    
-    # Format currency columns
-    df['Total Entradas'] = df['Total Entradas'].apply(format_currency)
-    df['Total Saídas'] = df['Total Saídas'].apply(format_currency)
-    df['Saldo'] = df['Saldo'].apply(format_currency)
-    
-    # Display the table with custom styling
-    st.markdown("""
-    <style>
-    .dataframe {
-        font-size: 14px !important;
-        background-color: #1E1E1E !important;
-        color: white !important;
-    }
-    .dataframe th {
-        background-color: #2E2E2E !important;
-        color: white !important;
-        font-weight: bold !important;
-        padding: 12px !important;
-    }
-    .dataframe td {
-        background-color: #1E1E1E !important;
-        color: white !important;
-        padding: 10px !important;
-    }
-    .report-details {
-        margin-top: 20px;
-        padding: 20px;
-        background-color: #1E1E1E;
-        border-radius: 8px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.table(df)
-    
     # Display detailed information for each report
     for report in st.session_state.history:
-        with st.expander(f"Detalhes do Relatório #{report['number']}"):
+        with st.expander(f"Relatório #{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
             # Create DataFrame from transactions
             df_transactions = create_transaction_df(report['transactions'])
             
