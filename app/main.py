@@ -109,33 +109,45 @@ st.markdown("""
     }
 
     /* Further refined balance container styling */
-    .balance-container {
-        padding: 5px 10px !important;
-        border-radius: 8px !important;
-        background-color: #4CAF50 !important; /* Match button color */
-        border: 2px solid #4CAF50 !important; /* Match button outline */
-        margin-top: 10px !important;
-        text-align: center !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        height: auto !important;
-    }
-    .balance-container h1 {
-        font-size: 24px !important;
-        margin: 0 !important;
-        color: white !important; /* White text like buttons */
-    }
-    .balance-container p {
+    .balance-title {
         font-size: 16px !important;
         color: white !important;
-        margin-top: 5px !important;
+        margin-bottom: 8px !important;
+        text-align: left !important;
+    }
+    
+    .balance-container {
+        background-color: #1e1e1e !important;
+        border: 1px solid rgba(250, 250, 250, 0.2) !important;
+        border-radius: 8px !important;
+        padding: 16px 32px !important;
+        margin: 4px 0 !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        height: auto !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .balance-container .amount {
+        font-size: 24px !important;
+        color: white !important;
+        margin: 0 !important;
+    }
+
+    .balance-container .status {
+        font-size: 16px !important;
+        color: white !important;
+        margin: 0 !important;
     }
 
     /* Adjust color based on amount */
     .balance-container.negative {
-        background-color: #ff4b4b !important; /* Red for negative balance */
-        border: 2px solid #ff4b4b !important; /* Match negative button outline */
+        background-color: #ff4b4b !important;
+    }
+    .balance-container.positive {
+        background-color: #4CAF50 !important;
     }
 
     /* White underlined corner buttons */
@@ -286,17 +298,13 @@ def show_main_page():
         abs_amount = abs(summary['net_amount'])
         status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
         
-        st.markdown("""
-        <div class="balance-container">
-            <h2>Saldo Total</h2>
-            <h1 style="color: {};">{}</h1>
-            <p>{}</p>
+        st.markdown('<div class="balance-title">Saldo</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="balance-container {'negative' if summary['net_amount'] < 0 else 'positive'}">
+            <div class="amount">{format_currency(abs_amount)}</div>
+            <div class="status">{status_text}</div>
         </div>
-        """.format(
-            '#ff4b4b' if summary['net_amount'] < 0 else '#4CAF50',
-            format_currency(abs_amount),
-            status_text
-        ), unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 def show_categories():
     # Back button in categories
