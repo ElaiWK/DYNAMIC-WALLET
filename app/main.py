@@ -207,7 +207,7 @@ def show_login_page():
     # st.write("Debug - Current session state keys:", list(st.session_state.keys()))
     
     # Adicionar título "DYNAMIC WALLET"
-    st.markdown("<h1 style='text-align: center; color: #4CAF50;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FF0000;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
     
     # Centralizar o formulário de login
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -379,6 +379,9 @@ def show_home_button():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def show_main_page():
+    # Debug message
+    st.write("DEBUG: show_main_page function called")
+    
     # Center the title without icon
     st.markdown(f"""
         <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
@@ -1378,8 +1381,8 @@ def auto_save_user_data():
 
 def main():
     # Debug: Show current authentication state
-    # st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
-    # st.sidebar.write("Debug - Username:", st.session_state.get("username", "None"))
+    st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
+    st.sidebar.write("Debug - Username:", st.session_state.get("username", "None"))
     
     # Initialize session state if not already done
     if "authenticated" not in st.session_state:
@@ -1390,7 +1393,7 @@ def main():
     
     # Show login page if not authenticated
     if not st.session_state.authenticated:
-        # st.sidebar.warning("Not authenticated - showing login page")
+        st.sidebar.warning("Not authenticated - showing login page")
         show_login_page()
         return
     
@@ -1426,6 +1429,10 @@ def main():
         st.session_state.history = load_user_history(st.session_state.username) or []
         st.session_state.user_data_loaded = True
     
+    # Debug: Show loaded data
+    st.sidebar.write("Debug - Transactions:", len(st.session_state.transactions))
+    st.sidebar.write("Debug - History:", len(st.session_state.history))
+    
     # Auto-save user data periodically
     auto_save_user_data()
     
@@ -1435,34 +1442,23 @@ def main():
         tab4 = st.tabs(["Colaboradores"])[0]
         
         # Mostrar apenas a aba de colaboradores
-        show_admin_tab()
+        with tab4:
+            show_admin_tab()
     else:
         tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
         
-        # Handle tab switching
-        if "active_tab" not in st.session_state:
-            st.session_state.active_tab = "Registar"
+        # Debug tab information
+        st.sidebar.write("Debug - Tab IDs:", tab1.id, tab2.id, tab3.id)
         
-        # Only update active tab when explicitly switching tabs
-        if tab2.id and tab2.id != st.session_state.active_tab:
-            st.session_state.active_tab = "Relatório"
-        elif tab1.id and tab1.id != st.session_state.active_tab:
-            st.session_state.active_tab = "Registar"
-        elif tab3.id and tab3.id != st.session_state.active_tab:
-            st.session_state.active_tab = "Histórico"
+        # Show content directly in each tab
+        with tab1:
+            show_main_page()
         
-        # Show the appropriate tab content
-        if st.session_state.active_tab == "Registar":
-            with tab1:
-                show_main_page()
-        elif st.session_state.active_tab == "Relatório":
-            with tab2:
-                show_report_tab()
-        elif st.session_state.active_tab == "Histórico":
-            with tab3:
-                show_history_tab()
-    
-    # If user is admin, show admin tab
+        with tab2:
+            show_report_tab()
+        
+        with tab3:
+            show_history_tab()
 
 def show_admin_tab():
     """Show the admin dashboard"""
@@ -1703,6 +1699,9 @@ def show_admin_tab():
                 st.info(f"{selected_user} não tem histórico de relatórios")
 
 def show_history_tab():
+    # Debug message
+    st.write("DEBUG: show_history_tab function called")
+    
     st.subheader("Histórico de Relatórios")
     
     if not st.session_state.history:
@@ -1815,6 +1814,9 @@ def get_period_summary(df):
     }
 
 def show_report_tab():
+    # Debug message
+    st.write("DEBUG: show_report_tab function called")
+    
     # Simple title for the report tab
     st.subheader("Relatório")
     
