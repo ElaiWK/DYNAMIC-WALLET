@@ -2017,7 +2017,7 @@ def show_report_tab():
                 st.session_state.current_end_date = next_end
                 
                 # Mostrar mensagem de sucesso
-                st.success(f"Relatório {report_number} gerado com sucesso!")
+                st.success("Relatório submetido com sucesso!")
     else:
         st.info("Não há transações registradas para o período atual.")
 
