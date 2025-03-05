@@ -190,96 +190,144 @@ def show_form():
     
     st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
     
-    with st.form("transaction_form", clear_on_submit=True):
-        st.markdown('<div class="form-container">', unsafe_allow_html=True)
+    if st.session_state.category == ExpenseCategory.MEAL.value:
+        # Initialize session state for meal form
+        if "meal_total_amount" not in st.session_state:
+            st.session_state.meal_total_amount = 0.0
+        if "meal_num_people" not in st.session_state:
+            st.session_state.meal_num_people = 1
+        if "collaborator_names" not in st.session_state:
+            st.session_state.collaborator_names = [""]
         
-        date = st.date_input("Data", datetime.now())
-        amount = None
-        error = None
+        # Create two columns for the main inputs
+        col1, col2 = st.columns(2)
         
-        if st.session_state.category == ExpenseCategory.MEAL.value:
-            # Initialize session state for collaborator names if not exists
-            if "collaborator_names" not in st.session_state:
-                st.session_state.collaborator_names = [""]
-            
-            total_amount = st.number_input("Valor da Fatura (€)", min_value=0.0, step=0.5)
-            num_people = st.number_input("Número de Colaboradores", min_value=1, step=1)
-            meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
-            
-            # Update collaborator names list based on number of people
-            if len(st.session_state.collaborator_names) != num_people:
-                if len(st.session_state.collaborator_names) < num_people:
-                    # Add new empty fields
-                    st.session_state.collaborator_names.extend([""] * (num_people - len(st.session_state.collaborator_names)))
+        with col1:
+            new_total_amount = st.number_input(
+                "Valor da Fatura (€)", 
+                min_value=0.0, 
+                step=0.5,
+                value=st.session_state.meal_total_amount,
+                key="total_amount_input"
+            )
+            if new_total_amount != st.session_state.meal_total_amount:
+                st.session_state.meal_total_amount = new_total_amount
+                st.rerun()
+        
+        with col2:
+            new_num_people = st.number_input(
+                "Número de Colaboradores", 
+                min_value=1, 
+                step=1,
+                value=st.session_state.meal_num_people,
+                key="num_people_input"
+            )
+            if new_num_people != st.session_state.meal_num_people:
+                st.session_state.meal_num_people = new_num_people
+                # Update collaborator names list
+                if len(st.session_state.collaborator_names) < new_num_people:
+                    st.session_state.collaborator_names.extend([""] * (new_num_people - len(st.session_state.collaborator_names)))
                 else:
-                    # Remove extra fields
-                    st.session_state.collaborator_names = st.session_state.collaborator_names[:num_people]
-            
-            # Dynamic collaborator name fields
-            st.subheader("Nomes dos Colaboradores")
-            for i in range(num_people):
-                st.session_state.collaborator_names[i] = st.text_input(
-                    f"Colaborador {i+1}", 
-                    value=st.session_state.collaborator_names[i],
-                    key=f"collaborator_{i}"
-                )
-            
-            # Calculate and show the actual amount that will be used
-            calculated_amount, _ = calculate_meal_expense(total_amount, num_people, meal_type)
+                    st.session_state.collaborator_names = st.session_state.collaborator_names[:new_num_people]
+                st.rerun()
+        
+        meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
+        
+        # Show calculated amount immediately
+        if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
+            calculated_amount, _ = calculate_meal_expense(
+                st.session_state.meal_total_amount, 
+                st.session_state.meal_num_people, 
+                meal_type
+            )
             st.markdown(f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
                 <h4>Valor a ser registrado:</h4>
                 <h3 style="color: #4CAF50;">{format_currency(calculated_amount)}</h3>
             </div>
             """, unsafe_allow_html=True)
-            
-            # Create description with collaborator names
-            names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{num_people} colaboradores"
-            description = f"{meal_type} com {names_str}"
-            
-            if st.form_submit_button("Submeter"):
-                amount, error = calculate_meal_expense(total_amount, num_people, meal_type)
-                
-        elif st.session_state.category == ExpenseCategory.HR.value:
-            role = st.selectbox("Função", list(HR_RATES.keys()))
-            hours = st.number_input("Horas Trabalhadas", min_value=0.0, step=0.5)
-            description = f"Despesa RH para {role}"
-            
-            if st.form_submit_button("Submeter"):
-                amount, error = calculate_hr_expense(hours, role)
-                
-        elif st.session_state.category == IncomeCategory.SERVICE.value:
-            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
-            reference = st.text_input("Número do Serviço")
-            description = f"Serviço #{reference}"
-            
-            if st.form_submit_button("Submeter"):
-                error = None if amount > 0 else "O valor deve ser maior que 0"
-                
-        elif st.session_state.category == IncomeCategory.COLLABORATOR.value:
-            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
-            collaborator = st.text_input("Nome do Colaborador")
-            description = f"Pagamento de {collaborator}"
-            
-            if st.form_submit_button("Submeter"):
-                error = None if amount > 0 else "O valor deve ser maior que 0"
-                
-        else:  # Other expense or income
-            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
-            description = st.text_input("Descrição")
-            
-            if st.form_submit_button("Submeter"):
-                error = None if amount > 0 else "O valor deve ser maior que 0"
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Dynamic collaborator name fields
+        st.subheader("Nomes dos Colaboradores")
+        for i in range(st.session_state.meal_num_people):
+            st.session_state.collaborator_names[i] = st.text_input(
+                f"Colaborador {i+1}", 
+                value=st.session_state.collaborator_names[i],
+                key=f"collaborator_{i}"
+            )
         
-        if error:
-            st.error(error)
-        elif amount is not None:
-            save_transaction(date, st.session_state.transaction_type, st.session_state.category, description, amount)
-            st.success("Transação registrada com sucesso!")
-            st.session_state.page = "main"
-            st.rerun()
+        # Create description with collaborator names
+        names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{st.session_state.meal_num_people} colaboradores"
+        description = f"{meal_type} com {names_str}"
+        
+        if st.button("Submeter", key="submit_meal"):
+            amount, error = calculate_meal_expense(
+                st.session_state.meal_total_amount, 
+                st.session_state.meal_num_people, 
+                meal_type
+            )
+            if not error:
+                save_transaction(
+                    datetime.now().date(), 
+                    TransactionType.EXPENSE.value, 
+                    ExpenseCategory.MEAL.value, 
+                    description, 
+                    amount
+                )
+                st.success("Transação registrada com sucesso!")
+                st.session_state.page = "main"
+                st.rerun()
+            else:
+                st.error(error)
+    
+    else:
+        with st.form("transaction_form", clear_on_submit=True):
+            st.markdown('<div class="form-container">', unsafe_allow_html=True)
+            
+            date = st.date_input("Data", datetime.now())
+            amount = None
+            error = None
+            
+            if st.session_state.category == ExpenseCategory.HR.value:
+                role = st.selectbox("Função", list(HR_RATES.keys()))
+                hours = st.number_input("Horas Trabalhadas", min_value=0.0, step=0.5)
+                description = f"Despesa RH para {role}"
+                
+                if st.form_submit_button("Submeter"):
+                    amount, error = calculate_hr_expense(hours, role)
+                    
+            elif st.session_state.category == IncomeCategory.SERVICE.value:
+                amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+                reference = st.text_input("Número do Serviço")
+                description = f"Serviço #{reference}"
+                
+                if st.form_submit_button("Submeter"):
+                    error = None if amount > 0 else "O valor deve ser maior que 0"
+                    
+            elif st.session_state.category == IncomeCategory.COLLABORATOR.value:
+                amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+                collaborator = st.text_input("Nome do Colaborador")
+                description = f"Pagamento de {collaborator}"
+                
+                if st.form_submit_button("Submeter"):
+                    error = None if amount > 0 else "O valor deve ser maior que 0"
+                    
+            else:  # Other expense or income
+                amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+                description = st.text_input("Descrição")
+                
+                if st.form_submit_button("Submeter"):
+                    error = None if amount > 0 else "O valor deve ser maior que 0"
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if error:
+                st.error(error)
+            elif amount is not None:
+                save_transaction(date, st.session_state.transaction_type, st.session_state.category, description, amount)
+                st.success("Transação registrada com sucesso!")
+                st.session_state.page = "main"
+                st.rerun()
 
 def save_transaction(date, type_, category, description, amount):
     transaction = {
