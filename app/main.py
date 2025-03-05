@@ -108,26 +108,32 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
-    /* Balance container styling */
+    /* Updated balance container styling */
     .balance-container {
-        padding: 15px;
-        border-radius: 10px;
-        background-color: #f8f9fa;
-        margin-top: 20px;
-        text-align: center;
+        padding: 10px !important;
+        border-radius: 8px !important;
+        background-color: #f0f0f0 !important;
+        margin-top: 20px !important;
+        text-align: center !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        height: auto !important;
     }
     .balance-container h1 {
-        font-size: 28px;
-        margin: 0;
-    }
-    .balance-container h2 {
-        font-size: 18px;
-        margin-bottom: 5px;
+        font-size: 24px !important;
+        margin: 0 !important;
+        color: #4CAF50 !important;
     }
     .balance-container p {
-        font-size: 14px;
-        color: #666;
-        margin-top: 5px;
+        font-size: 16px !important;
+        color: #666 !important;
+        margin-top: 5px !important;
+    }
+
+    /* Adjust color based on amount */
+    .balance-container.negative h1 {
+        color: #ff4b4b !important;
     }
 
     /* White underlined corner buttons */
@@ -146,6 +152,24 @@ st.markdown("""
 
     .corner-button .stButton > button:hover {
         color: #cccccc !important;
+    }
+
+    /* Box styling to match button design */
+    .styled-box {
+        background-color: #f0f0f0 !important;
+        border: 2px solid #cccccc !important;
+        border-radius: 10px !important;
+        padding: 20px !important;
+        margin: 10px 0 !important;
+        text-align: center !important;
+        color: #333333 !important;
+        font-size: 18px !important;
+    }
+
+    .styled-box h1 {
+        color: #28a745 !important;
+        font-size: 24px !important;
+        margin-bottom: 10px !important;
     }
 </style>
 """, unsafe_allow_html=True)
