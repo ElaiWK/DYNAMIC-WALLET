@@ -32,7 +32,8 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    div.stButton > button:not([kind="secondary"]) {
+    /* Main buttons (green) */
+    div.stButton > button:not(.back-button) {
         background-color: #4CAF50;
         border: none;
         color: white;
@@ -47,27 +48,55 @@ st.markdown("""
         width: 100%;
         transition: all 0.3s;
     }
-    div.stButton > button:not([kind="secondary"]):hover {
+    div.stButton > button:not(.back-button):hover {
         background-color: #45a049;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .expense-button > button {
+    
+    /* Category buttons (white) */
+    div.category-button > button {
+        background-color: #ffffff !important;
+        border: 2px solid #e0e0e0 !important;
+        color: #333333 !important;
+        padding: 20px !important;
+        text-align: center !important;
+        text-decoration: none !important;
+        display: block !important;
+        font-size: 18px !important;
+        margin: 10px 0 !important;
+        cursor: pointer !important;
+        border-radius: 8px !important;
+        transition: all 0.3s !important;
+        width: 100% !important;
+    }
+    div.category-button > button:hover {
+        border-color: #4CAF50 !important;
+        transform: translateX(5px) !important;
+    }
+    
+    /* Back button styling */
+    div.back-container {
+        text-align: right;
+        margin-bottom: 20px;
+    }
+    div.back-container > div.stButton > button {
+        all: unset;
+        color: #4a4a4a;
+        font-size: 14px;
+        text-decoration: underline;
+        cursor: pointer;
+        display: inline;
+    }
+    div.back-container > div.stButton > button:hover {
+        color: #2b2b2b;
+    }
+    
+    /* Submit buttons (red) */
+    div.meal-submit-button > button {
         background-color: #ff4b4b !important;
     }
-    .expense-button > button:hover {
-        background-color: #e64444 !important;
-    }
-    .income-button > button {
-        background-color: #4CAF50 !important;
-    }
-    .income-button > button:hover {
-        background-color: #45a049 !important;
-    }
-    .meal-submit-button > button {
-        background-color: #ff4b4b !important;
-    }
-    .meal-submit-button > button:hover {
+    div.meal-submit-button > button:hover {
         background-color: #e64444 !important;
     }
     .balance-container {
@@ -89,51 +118,6 @@ st.markdown("""
         font-size: 14px;
         color: #666;
         margin-top: 5px;
-    }
-    div.category-button > button {
-        background-color: #ffffff;
-        border: 2px solid #e0e0e0;
-        color: #333333;
-        padding: 20px;
-        text-align: center;
-        text-decoration: none;
-        display: block;
-        font-size: 18px;
-        margin: 10px 0;
-        cursor: pointer;
-        border-radius: 8px;
-        transition: all 0.3s;
-    }
-    div.category-button > button:hover {
-        border-color: #4CAF50;
-        transform: translateX(5px);
-    }
-    div.back-button {
-        text-align: right;
-        margin: 0;
-        padding: 0;
-    }
-    div.back-button > button:not(.streamlit-button) {
-        all: unset;
-        color: #4a4a4a !important;
-        font-size: 14px !important;
-        text-decoration: underline !important;
-        cursor: pointer !important;
-        background: none !important;
-        border: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: auto !important;
-        box-shadow: none !important;
-        display: inline !important;
-        transform: none !important;
-    }
-    div.back-button > button:hover {
-        color: #2b2b2b !important;
-        background: none !important;
-        border: none !important;
-        transform: none !important;
-        box-shadow: none !important;
     }
     div.stButton.link-container {
         text-align: right !important;
@@ -289,8 +273,8 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
-    if st.button("← Voltar", key="back_button", type="secondary"):
+    st.markdown('<div class="back-container">', unsafe_allow_html=True)
+    if st.button("← Voltar", key="back_button"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -303,13 +287,15 @@ def show_categories():
     )
     
     for idx, category in enumerate(categories):
+        st.markdown('<div class="category-button">', unsafe_allow_html=True)
         if st.button(category, key=f"category_{idx}"):
             navigate_to_form(category)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def show_form():
     # Back button
-    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
-    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary"):
+    st.markdown('<div class="back-container">', unsafe_allow_html=True)
+    if st.button("← Voltar para Categorias", key="back_to_categories"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
