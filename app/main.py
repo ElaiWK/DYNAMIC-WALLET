@@ -218,12 +218,16 @@ def show_main_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("Saídas", key="expense_button"):
-            navigate_to_categories(TransactionType.EXPENSE.value)
+        if st.button("Saídas", key="expense_button", use_container_width=True):
+            st.session_state.page = "categories"
+            st.session_state.transaction_type = TransactionType.EXPENSE.value
+            st.rerun()
     
     with col2:
-        if st.button("Entradas", key="income_button"):
-            navigate_to_categories(TransactionType.INCOME.value)
+        if st.button("Entradas", key="income_button", use_container_width=True):
+            st.session_state.page = "categories"
+            st.session_state.transaction_type = TransactionType.INCOME.value
+            st.rerun()
     
     # Show balance at the bottom
     if st.session_state.transactions:
