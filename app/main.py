@@ -196,17 +196,20 @@ def navigate_back():
     st.rerun()
 
 def show_main_page():
-    st.title("💰 MD Wallet")
+    # Center the title without icon
+    st.markdown("""
+        <h1 style="text-align: center; margin-bottom: 40px;">DYNAMIC WALLET</h1>
+    """, unsafe_allow_html=True)
     
     # Create two columns for buttons
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("Pague", key="expense_button"):
+        if st.button("Saídas", key="expense_button"):
             navigate_to_categories(TransactionType.EXPENSE.value)
     
     with col2:
-        if st.button("Recebi", key="income_button"):
+        if st.button("Entradas", key="income_button"):
             navigate_to_categories(TransactionType.INCOME.value)
     
     # Show balance at the bottom
@@ -214,14 +217,20 @@ def show_main_page():
         df = create_transaction_df(st.session_state.transactions)
         summary = get_period_summary(df)
         
+        # Calculate absolute value and determine status
+        abs_amount = abs(summary['net_amount'])
+        status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
+        
         st.markdown("""
-        <div class="balance-container">
-            <h2>Saldo Total</h2>
-            <h1 style="color: {};">{}</h1>
+        <div class="balance-container" style="padding: 10px; margin-top: 20px;">
+            <h2 style="margin-bottom: 5px;">Saldo Total</h2>
+            <h1 style="color: {}; margin: 0;">{}</h1>
+            <p style="color: #666; margin-top: 5px; font-size: 16px;">{}</p>
         </div>
         """.format(
-            '#4CAF50' if summary['net_amount'] >= 0 else '#ff4b4b',
-            format_currency(summary['net_amount'])
+            '#ff4b4b' if summary['net_amount'] < 0 else '#4CAF50',
+            format_currency(abs_amount),
+            status_text
         ), unsafe_allow_html=True)
 
 def show_categories():
