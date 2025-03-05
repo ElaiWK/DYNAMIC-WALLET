@@ -1579,7 +1579,7 @@ def show_admin_tab():
         st.subheader(f"Dados de {selected_user}")
         
         # Create tabs for user data
-        user_transactions_tab, user_history_tab = st.tabs(["Transações", "Histórico"])
+        user_transactions_tab, user_history_tab = st.tabs(["Relatório", "Histórico"])
         
         with user_transactions_tab:
             # Load user transactions

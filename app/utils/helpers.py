@@ -57,9 +57,31 @@ def create_transaction_df(transactions):
 def get_period_summary(df):
     """Calculate summary statistics for a period."""
     if df.empty:
-        return {"net_amount": 0}
+        return {
+            "total_income": 0,
+            "total_expense": 0,
+            "total_expenses": 0,  # Duplicado para compatibilidade
+            "net_amount": 0,
+            "total_meals": 0,
+            "total_transport": 0,
+            "total_other": 0
+        }
     
+    # Calcular totais por tipo
     expenses = df[df["Type"] == "Saída"]["Amount"].sum()
     income = df[df["Type"] == "Entrada"]["Amount"].sum()
     
-    return {"net_amount": income - expenses} 
+    # Calcular totais por categoria de despesa
+    meals = df[(df["Type"] == "Saída") & (df["Category"] == "Refeição")]["Amount"].sum() if "Category" in df.columns else 0
+    transport = df[(df["Type"] == "Saída") & (df["Category"] == "Transporte")]["Amount"].sum() if "Category" in df.columns else 0
+    other = df[(df["Type"] == "Saída") & (df["Category"] == "Outro")]["Amount"].sum() if "Category" in df.columns else 0
+    
+    return {
+        "total_income": income,
+        "total_expense": expenses,
+        "total_expenses": expenses,  # Duplicado para compatibilidade
+        "net_amount": income - expenses,
+        "total_meals": meals,
+        "total_transport": transport,
+        "total_other": other
+    } 
