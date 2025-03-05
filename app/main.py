@@ -32,7 +32,7 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    div.stButton > button {
+    div.stButton > button:not([kind="secondary"]) {
         background-color: #4CAF50;
         border: none;
         color: white;
@@ -47,7 +47,7 @@ st.markdown("""
         width: 100%;
         transition: all 0.3s;
     }
-    div.stButton > button:hover {
+    div.stButton > button:not([kind="secondary"]):hover {
         background-color: #45a049;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -142,28 +142,25 @@ st.markdown("""
     div.stButton.link-container > button {
         width: auto !important;
     }
-    /* Back button specific styling */
-    div.stButton.back-button > button[kind="secondary"] {
-        background: none !important;
-        border: none !important;
-        padding: 0 !important;
+    /* Back button styling */
+    div.stButton > button[kind="secondary"] {
+        all: unset;
         color: #4a4a4a !important;
         font-size: 14px !important;
         text-decoration: underline !important;
         cursor: pointer !important;
-        width: auto !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-        transform: none !important;
-        min-height: 0 !important;
-        line-height: normal !important;
-    }
-    div.stButton.back-button > button[kind="secondary"]:hover {
-        color: #2b2b2b !important;
         background: none !important;
         border: none !important;
-        transform: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: auto !important;
+        min-height: 0 !important;
+        line-height: normal !important;
         box-shadow: none !important;
+        transform: none !important;
+    }
+    div.stButton > button[kind="secondary"]:hover {
+        color: #2b2b2b !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -292,8 +289,8 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    st.markdown('<div class="stButton back-button" style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
-    if st.button("← Voltar", key="back_button", type="secondary", use_container_width=False):
+    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    if st.button("← Voltar", key="back_button", type="secondary"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -311,8 +308,8 @@ def show_categories():
 
 def show_form():
     # Back button
-    st.markdown('<div class="stButton back-button" style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
-    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary", use_container_width=False):
+    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
