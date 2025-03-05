@@ -28,105 +28,211 @@ st.set_page_config(
     layout="wide"
 )
 
+# Custom CSS
+st.markdown("""
+<style>
+    .big-button {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 32px 64px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 24px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 12px;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    .big-button:hover {
+        background-color: #45a049;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .expense-button {
+        background-color: #ff4b4b !important;
+    }
+    .expense-button:hover {
+        background-color: #e64444 !important;
+    }
+    .income-button {
+        background-color: #4CAF50 !important;
+    }
+    .income-button:hover {
+        background-color: #45a049 !important;
+    }
+    .balance-container {
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        margin-top: 30px;
+        text-align: center;
+    }
+    .category-button {
+        background-color: #ffffff;
+        border: 2px solid #e0e0e0;
+        color: #333333;
+        padding: 20px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        font-size: 18px;
+        margin: 10px 0;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    .category-button:hover {
+        border-color: #4CAF50;
+        transform: translateX(5px);
+    }
+    .back-button {
+        background-color: #6c757d;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-decoration: none;
+        font-size: 14px;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    .form-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
 if "transactions" not in st.session_state:
     st.session_state.transactions = []
-if "submitted_reports" not in st.session_state:
-    st.session_state.submitted_reports = {}
+if "page" not in st.session_state:
+    st.session_state.page = "main"
+if "transaction_type" not in st.session_state:
+    st.session_state.transaction_type = None
+if "category" not in st.session_state:
+    st.session_state.category = None
 
-def main():
-    st.title("MD Wallet - Expense Tracker")
+def show_main_page():
+    st.title("💰 MD Wallet")
     
-    # Main navigation
-    tab1, tab2 = st.tabs(["Record Transaction", "View Reports"])
+    # Create two columns for buttons
+    col1, col2 = st.columns(2)
     
-    with tab1:
-        record_transaction()
+    with col1:
+        if st.markdown('<button class="big-button expense-button">Pague</button>', unsafe_allow_html=True):
+            st.session_state.page = "categories"
+            st.session_state.transaction_type = TransactionType.EXPENSE.value
+            st.experimental_rerun()
     
-    with tab2:
-        view_reports()
+    with col2:
+        if st.markdown('<button class="big-button income-button">Recebi</button>', unsafe_allow_html=True):
+            st.session_state.page = "categories"
+            st.session_state.transaction_type = TransactionType.INCOME.value
+            st.experimental_rerun()
+    
+    # Show balance at the bottom
+    if st.session_state.transactions:
+        df = create_transaction_df(st.session_state.transactions)
+        summary = get_period_summary(df)
+        
+        st.markdown("""
+        <div class="balance-container">
+            <h2>Saldo Total</h2>
+            <h1 style="color: {};">{}</h1>
+        </div>
+        """.format(
+            '#4CAF50' if summary['net_amount'] >= 0 else '#ff4b4b',
+            format_currency(summary['net_amount'])
+        ), unsafe_allow_html=True)
 
-def record_transaction():
-    st.header("Record Transaction")
+def show_categories():
+    # Back button
+    if st.markdown('<a href="#" class="back-button">← Voltar</a>', unsafe_allow_html=True):
+        st.session_state.page = "main"
+        st.experimental_rerun()
     
-    # Transaction type selection
-    transaction_type = st.radio(
-        "Select Transaction Type",
-        [TransactionType.EXPENSE.value, TransactionType.INCOME.value],
-        horizontal=True
+    st.subheader("Selecione a Categoria")
+    
+    categories = (
+        [cat.value for cat in ExpenseCategory] 
+        if st.session_state.transaction_type == TransactionType.EXPENSE.value
+        else [cat.value for cat in IncomeCategory]
     )
     
-    if transaction_type == TransactionType.EXPENSE.value:
-        record_expense()
-    else:
-        record_income()
+    for category in categories:
+        if st.markdown(f'<button class="category-button">{category}</button>', unsafe_allow_html=True):
+            st.session_state.category = category
+            st.session_state.page = "form"
+            st.experimental_rerun()
 
-def record_expense():
-    with st.form("expense_form"):
-        date = st.date_input("Date", datetime.now())
-        category = st.selectbox(
-            "Category",
-            [cat.value for cat in ExpenseCategory]
-        )
+def show_form():
+    # Back button
+    if st.markdown('<a href="#" class="back-button">← Voltar para Categorias</a>', unsafe_allow_html=True):
+        st.session_state.page = "categories"
+        st.experimental_rerun()
+    
+    st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
+    
+    with st.form("transaction_form", clear_on_submit=True):
+        st.markdown('<div class="form-container">', unsafe_allow_html=True)
         
-        # Dynamic fields based on category
+        date = st.date_input("Data", datetime.now())
         amount = None
         error = None
         
-        if category == ExpenseCategory.MEAL.value:
-            amount_per_person = st.number_input("Amount per Person (€)", min_value=0.0, step=0.5)
-            num_people = st.number_input("Number of People", min_value=1, step=1)
-            description = st.text_input("Description")
+        if st.session_state.category == ExpenseCategory.MEAL.value:
+            amount_per_person = st.number_input("Valor por Pessoa (€)", min_value=0.0, step=0.5)
+            num_people = st.number_input("Número de Pessoas", min_value=1, step=1)
+            description = st.text_input("Descrição")
             
-            if st.form_submit_button("Submit"):
+            if st.form_submit_button("Submeter"):
                 amount, error = calculate_meal_expense(amount_per_person, num_people)
                 
-        elif category == ExpenseCategory.HR.value:
-            role = st.selectbox("Role", list(HR_RATES.keys()))
-            hours = st.number_input("Hours Worked", min_value=0.0, step=0.5)
-            description = f"HR expense for {role}"
+        elif st.session_state.category == ExpenseCategory.HR.value:
+            role = st.selectbox("Função", list(HR_RATES.keys()))
+            hours = st.number_input("Horas Trabalhadas", min_value=0.0, step=0.5)
+            description = f"Despesa RH para {role}"
             
-            if st.form_submit_button("Submit"):
+            if st.form_submit_button("Submeter"):
                 amount, error = calculate_hr_expense(hours, role)
                 
-        else:  # Other expense
-            amount = st.number_input("Amount (€)", min_value=0.0, step=0.5)
-            description = st.text_input("Description")
+        elif st.session_state.category == IncomeCategory.SERVICE.value:
+            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+            reference = st.text_input("Número do Serviço")
+            description = f"Serviço #{reference}"
             
-            if st.form_submit_button("Submit"):
-                error = None if amount > 0 else "Amount must be greater than 0"
+            if st.form_submit_button("Submeter"):
+                error = None if amount > 0 else "O valor deve ser maior que 0"
+                
+        elif st.session_state.category == IncomeCategory.COLLABORATOR.value:
+            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+            collaborator = st.text_input("Nome do Colaborador")
+            description = f"Pagamento de {collaborator}"
+            
+            if st.form_submit_button("Submeter"):
+                error = None if amount > 0 else "O valor deve ser maior que 0"
+                
+        else:  # Other expense or income
+            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
+            description = st.text_input("Descrição")
+            
+            if st.form_submit_button("Submeter"):
+                error = None if amount > 0 else "O valor deve ser maior que 0"
+        
+        st.markdown('</div>', unsafe_allow_html=True)
         
         if error:
             st.error(error)
         elif amount is not None:
-            save_transaction(date, TransactionType.EXPENSE.value, category, description, amount)
-            st.success("Expense recorded successfully!")
-
-def record_income():
-    with st.form("income_form"):
-        date = st.date_input("Date", datetime.now())
-        category = st.selectbox(
-            "Category",
-            [cat.value for cat in IncomeCategory]
-        )
-        
-        amount = st.number_input("Amount (€)", min_value=0.0, step=0.5)
-        
-        if category == IncomeCategory.SERVICE.value:
-            reference = st.text_input("Service Number")
-            description = f"Service #{reference}"
-        elif category == IncomeCategory.COLLABORATOR.value:
-            collaborator = st.text_input("Collaborator Name")
-            description = f"Payment from {collaborator}"
-        else:
-            description = st.text_input("Description")
-        
-        if st.form_submit_button("Submit"):
-            if amount > 0:
-                save_transaction(date, TransactionType.INCOME.value, category, description, amount)
-                st.success("Income recorded successfully!")
-            else:
-                st.error("Amount must be greater than 0")
+            save_transaction(date, st.session_state.transaction_type, st.session_state.category, description, amount)
+            st.success("Transação registrada com sucesso!")
+            st.session_state.page = "main"
+            st.experimental_rerun()
 
 def save_transaction(date, type_, category, description, amount):
     transaction = {
@@ -138,68 +244,13 @@ def save_transaction(date, type_, category, description, amount):
     }
     st.session_state.transactions.append(transaction)
 
-def view_reports():
-    st.header("Transaction Reports")
-    
-    if not st.session_state.transactions:
-        st.info("No transactions recorded yet.")
-        return
-    
-    # Create DataFrame
-    df = create_transaction_df(st.session_state.transactions)
-    
-    # Display current period summary
-    current_start, current_end = get_week_period()
-    st.subheader(f"Current Period ({current_start} to {current_end})")
-    
-    # Filter transactions for current period
-    mask = (pd.to_datetime(df["Date"]) >= pd.Timestamp(current_start)) & \
-           (pd.to_datetime(df["Date"]) <= pd.Timestamp(current_end))
-    current_df = df[mask]
-    
-    # Display summary metrics
-    summary = get_period_summary(current_df)
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Expenses", format_currency(summary["total_expenses"]))
-    with col2:
-        st.metric("Total Income", format_currency(summary["total_income"]))
-    with col3:
-        st.metric("Net Amount", format_currency(summary["net_amount"]))
-    
-    # Display transactions table
-    st.subheader("Transactions")
-    st.dataframe(
-        current_df,
-        column_config={
-            "Amount": st.column_config.NumberColumn(
-                "Amount",
-                format="€%.2f"
-            )
-        }
-    )
-    
-    # Download button
-    if not current_df.empty:
-        csv = current_df.to_csv(index=False)
-        st.download_button(
-            "Download Report",
-            csv,
-            f"transactions_{current_start}_{current_end}.csv",
-            "text/csv"
-        )
-    
-    # Visualization
-    if not current_df.empty:
-        st.subheader("Expense Distribution")
-        fig = px.pie(
-            current_df[current_df["Type"] == TransactionType.EXPENSE.value],
-            values="Amount",
-            names="Category",
-            title="Expenses by Category"
-        )
-        st.plotly_chart(fig)
+def main():
+    if st.session_state.page == "main":
+        show_main_page()
+    elif st.session_state.page == "categories":
+        show_categories()
+    elif st.session_state.page == "form":
+        show_form()
 
 if __name__ == "__main__":
     main() 
