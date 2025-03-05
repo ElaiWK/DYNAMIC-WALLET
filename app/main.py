@@ -947,90 +947,56 @@ def main():
             # Display income transactions if they exist
             if not income_df.empty:
                 st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
-                st.dataframe(
-                    income_df.drop("Type", axis=1).style.set_properties(**{
-                        'white-space': 'pre-wrap',
-                        'text-align': 'left',
-                        'padding': '0.3rem',
-                        'line-height': '1.1',
-                        'max-width': 'none',
-                        'min-width': '100%',
-                        'overflow': 'hidden',
-                        'text-overflow': 'ellipsis'
-                    }).set_properties(subset=['Description'], **{
-                        'max-height': '60px',
-                        'overflow-y': 'auto',
-                        'display': 'block'
-                    }),
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "Date": st.column_config.TextColumn(
-                            "Data",
-                            width="4rem",
-                            help="Data da transação"
-                        ),
-                        "Category": st.column_config.TextColumn(
-                            "Categoria",
-                            width="8rem",
-                            help="Categoria da transação"
-                        ),
-                        "Description": st.column_config.TextColumn(
-                            "Descrição",
-                            width="20rem",
-                            help="Descrição detalhada"
-                        ),
-                        "Amount": st.column_config.TextColumn(
-                            "Valor",
-                            width="7rem",
-                            help="Valor da transação"
-                        )
-                    }
-                )
+                for _, row in income_df.iterrows():
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="
+                            background-color: rgba(76, 175, 80, 0.1);
+                            border-left: 4px solid #4CAF50;
+                            padding: 1rem;
+                            margin: 0.5rem 0;
+                            border-radius: 4px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: #666;">{row['Date']}</span>
+                                <span style="font-weight: 500; color: #4CAF50;">{row['Amount']}</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
+                                    {row['Category']}
+                                </span>
+                            </div>
+                            <div style="color: #333; margin-top: 0.5rem;">
+                                {row['Description']}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
             
             # Display expense transactions if they exist
             if not expense_df.empty:
                 st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
-                st.dataframe(
-                    expense_df.drop("Type", axis=1).style.set_properties(**{
-                        'white-space': 'pre-wrap',
-                        'text-align': 'left',
-                        'padding': '0.3rem',
-                        'line-height': '1.1',
-                        'max-width': 'none',
-                        'min-width': '100%',
-                        'overflow': 'hidden',
-                        'text-overflow': 'ellipsis'
-                    }).set_properties(subset=['Description'], **{
-                        'max-height': '60px',
-                        'overflow-y': 'auto',
-                        'display': 'block'
-                    }),
-                    hide_index=True,
-                    use_container_width=True,
-                    column_config={
-                        "Date": st.column_config.TextColumn(
-                            "Data",
-                            width="4rem",
-                            help="Data da transação"
-                        ),
-                        "Category": st.column_config.TextColumn(
-                            "Categoria",
-                            width="8rem",
-                            help="Categoria da transação"
-                        ),
-                        "Description": st.column_config.TextColumn(
-                            "Descrição",
-                            width="20rem",
-                            help="Descrição detalhada"
-                        ),
-                        "Amount": st.column_config.TextColumn(
-                            "Valor",
-                            width="7rem",
-                            help="Valor da transação"
-                        )
-                    }
-                )
+                for _, row in expense_df.iterrows():
+                    with st.container():
+                        st.markdown(f"""
+                        <div style="
+                            background-color: rgba(255, 75, 75, 0.1);
+                            border-left: 4px solid #ff4b4b;
+                            padding: 1rem;
+                            margin: 0.5rem 0;
+                            border-radius: 4px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span style="color: #666;">{row['Date']}</span>
+                                <span style="font-weight: 500; color: #ff4b4b;">{row['Amount']}</span>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
+                                    {row['Category']}
+                                </span>
+                            </div>
+                            <div style="color: #333; margin-top: 0.5rem;">
+                                {row['Description']}
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
             
             # Calculate summary statistics
             total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
