@@ -1098,7 +1098,7 @@ def show_history_tab():
             'Status': 'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'
         })
     
-    # Create DataFrame
+    # Create DataFrame for summary table
     df = pd.DataFrame(table_data)
     
     # Format currency columns
@@ -1125,10 +1125,109 @@ def show_history_tab():
         color: white !important;
         padding: 10px !important;
     }
+    .report-details {
+        margin-top: 20px;
+        padding: 20px;
+        background-color: #1E1E1E;
+        border-radius: 8px;
+    }
     </style>
     """, unsafe_allow_html=True)
     
     st.table(df)
+    
+    # Display detailed information for each report
+    for report in st.session_state.history:
+        with st.expander(f"Detalhes do Relatório #{report['number']}"):
+            # Create DataFrame from transactions
+            df_transactions = create_transaction_df(report['transactions'])
+            
+            # Split and sort transactions by type
+            income_df = df_transactions[df_transactions["Type"] == TransactionType.INCOME.value].copy()
+            expense_df = df_transactions[df_transactions["Type"] == TransactionType.EXPENSE.value].copy()
+            
+            income_df = income_df.sort_values("Date", ascending=True)
+            expense_df = expense_df.sort_values("Date", ascending=True)
+            
+            # Format amounts and dates
+            income_df["Amount"] = income_df["Amount"].apply(format_currency)
+            expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
+            income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
+            expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+            
+            # Display income transactions
+            if not income_df.empty:
+                st.markdown("<h4 style='font-size: 18px; color: white;'>Entradas</h4>", unsafe_allow_html=True)
+                for _, row in income_df.iterrows():
+                    st.markdown(f"""
+                    <div style="
+                        background-color: #1E1E1E;
+                        border-left: 4px solid #4CAF50;
+                        padding: 1rem;
+                        margin: 0.5rem 0;
+                        border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: #CCCCCC;">{row['Date']}</span>
+                            <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                            <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                                {row['Category']}
+                            </span>
+                        </div>
+                        <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                            {row['Description']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Display expense transactions
+            if not expense_df.empty:
+                st.markdown("<h4 style='font-size: 18px; color: white;'>Saídas</h4>", unsafe_allow_html=True)
+                for _, row in expense_df.iterrows():
+                    st.markdown(f"""
+                    <div style="
+                        background-color: #1E1E1E;
+                        border-left: 4px solid #ff4b4b;
+                        padding: 1rem;
+                        margin: 0.5rem 0;
+                        border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="color: #CCCCCC;">{row['Date']}</span>
+                            <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                        </div>
+                        <div style="margin-bottom: 0.5rem;">
+                            <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                                {row['Category']}
+                            </span>
+                        </div>
+                        <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                            {row['Description']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Display summary for this report
+            st.markdown(f"""
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 15px;">
+                    <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Total Entradas: </span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(report['summary']['total_income'])}</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Total Saídas: </span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(report['summary']['total_expense'])}</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Saldo: </span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(report['summary']['net_amount']))}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 def get_period_summary(df):
     total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
