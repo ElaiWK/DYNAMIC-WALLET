@@ -939,16 +939,17 @@ def main():
                     income_df.drop("Type", axis=1).style.set_properties(**{
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
-                        'padding': '0.5rem',
-                        'line-height': '1.2'
+                        'padding': '0.3rem',
+                        'line-height': '1.1',
+                        'max-width': 'none'
                     }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
-                        "Date": st.column_config.TextColumn(width="small"),
-                        "Category": st.column_config.TextColumn(width="small"),
-                        "Description": st.column_config.TextColumn(width="large", max_chars=50),
-                        "Amount": st.column_config.TextColumn(width="small")
+                        "Date": st.column_config.TextColumn(width="5rem"),
+                        "Category": st.column_config.TextColumn(width="8rem"),
+                        "Description": st.column_config.TextColumn(width="25rem"),
+                        "Amount": st.column_config.TextColumn(width="7rem")
                     }
                 )
             
@@ -959,16 +960,17 @@ def main():
                     expense_df.drop("Type", axis=1).style.set_properties(**{
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
-                        'padding': '0.5rem',
-                        'line-height': '1.2'
+                        'padding': '0.3rem',
+                        'line-height': '1.1',
+                        'max-width': 'none'
                     }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
-                        "Date": st.column_config.TextColumn(width="small"),
-                        "Category": st.column_config.TextColumn(width="small"),
-                        "Description": st.column_config.TextColumn(width="large", max_chars=50),
-                        "Amount": st.column_config.TextColumn(width="small")
+                        "Date": st.column_config.TextColumn(width="5rem"),
+                        "Category": st.column_config.TextColumn(width="8rem"),
+                        "Description": st.column_config.TextColumn(width="25rem"),
+                        "Amount": st.column_config.TextColumn(width="7rem")
                     }
                 )
             
