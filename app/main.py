@@ -940,16 +940,33 @@ def main():
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
                         'padding': '0.3rem',
-                        'line-height': '1.1',
-                        'max-width': 'none'
+                        'line-height': '1.2',
+                        'max-width': 'none',
+                        'min-width': '100%'
                     }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
-                        "Date": st.column_config.TextColumn(width="5rem"),
-                        "Category": st.column_config.TextColumn(width="8rem"),
-                        "Description": st.column_config.TextColumn(width="25rem"),
-                        "Amount": st.column_config.TextColumn(width="7rem")
+                        "Date": st.column_config.TextColumn(
+                            "Data",
+                            width="small",
+                            help="Data da transação"
+                        ),
+                        "Category": st.column_config.TextColumn(
+                            "Categoria",
+                            width="small",
+                            help="Categoria da transação"
+                        ),
+                        "Description": st.column_config.TextColumn(
+                            "Descrição",
+                            width="medium",
+                            help="Descrição detalhada"
+                        ),
+                        "Amount": st.column_config.TextColumn(
+                            "Valor",
+                            width="small",
+                            help="Valor da transação"
+                        )
                     }
                 )
             
@@ -961,16 +978,33 @@ def main():
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
                         'padding': '0.3rem',
-                        'line-height': '1.1',
-                        'max-width': 'none'
+                        'line-height': '1.2',
+                        'max-width': 'none',
+                        'min-width': '100%'
                     }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
-                        "Date": st.column_config.TextColumn(width="5rem"),
-                        "Category": st.column_config.TextColumn(width="8rem"),
-                        "Description": st.column_config.TextColumn(width="25rem"),
-                        "Amount": st.column_config.TextColumn(width="7rem")
+                        "Date": st.column_config.TextColumn(
+                            "Data",
+                            width="small",
+                            help="Data da transação"
+                        ),
+                        "Category": st.column_config.TextColumn(
+                            "Categoria",
+                            width="small",
+                            help="Categoria da transação"
+                        ),
+                        "Description": st.column_config.TextColumn(
+                            "Descrição",
+                            width="medium",
+                            help="Descrição detalhada"
+                        ),
+                        "Amount": st.column_config.TextColumn(
+                            "Valor",
+                            width="small",
+                            help="Valor da transação"
+                        )
                     }
                 )
             
