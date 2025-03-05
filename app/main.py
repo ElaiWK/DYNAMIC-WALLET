@@ -108,12 +108,13 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
-    /* Refined balance container styling */
+    /* Further refined balance container styling */
     .balance-container {
-        padding: 10px !important;
+        padding: 5px 10px !important;
         border-radius: 8px !important;
         background-color: #4CAF50 !important; /* Match button color */
-        margin-top: 20px !important;
+        border: 2px solid #4CAF50 !important; /* Match button outline */
+        margin-top: 10px !important;
         text-align: center !important;
         display: flex !important;
         flex-direction: column !important;
@@ -134,6 +135,7 @@ st.markdown("""
     /* Adjust color based on amount */
     .balance-container.negative {
         background-color: #ff4b4b !important; /* Red for negative balance */
+        border: 2px solid #ff4b4b !important; /* Match negative button outline */
     }
 
     /* White underlined corner buttons */
