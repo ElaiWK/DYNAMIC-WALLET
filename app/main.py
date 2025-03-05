@@ -951,14 +951,14 @@ def main():
                     with st.container():
                         st.markdown(f"""
                         <div style="
-                            background-color: rgba(76, 175, 80, 0.1);
+                            background-color: white;
                             border-left: 4px solid #4CAF50;
                             padding: 1rem;
                             margin: 0.5rem 0;
                             border-radius: 4px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                 <span style="color: #666;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #4CAF50;">{row['Amount']}</span>
+                                <span style="font-weight: 500; color: #333;">{row['Amount']}</span>
                             </div>
                             <div style="margin-bottom: 0.5rem;">
                                 <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
@@ -978,14 +978,14 @@ def main():
                     with st.container():
                         st.markdown(f"""
                         <div style="
-                            background-color: rgba(255, 75, 75, 0.1);
+                            background-color: white;
                             border-left: 4px solid #ff4b4b;
                             padding: 1rem;
                             margin: 0.5rem 0;
                             border-radius: 4px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
                                 <span style="color: #666;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #ff4b4b;">{row['Amount']}</span>
+                                <span style="font-weight: 500; color: #333;">{row['Amount']}</span>
                             </div>
                             <div style="margin-bottom: 0.5rem;">
                                 <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
