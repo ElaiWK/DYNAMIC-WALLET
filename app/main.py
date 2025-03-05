@@ -62,8 +62,8 @@ if "report_counter" not in st.session_state:
     st.session_state.report_counter = 1
 # Initialize date range
 if "current_start_date" not in st.session_state:
-    today = datetime.now().date()
-    start_date, end_date = get_week_dates(today)
+    start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
+    end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
     st.session_state.current_start_date = start_date
     st.session_state.current_end_date = end_date
 
@@ -151,11 +151,12 @@ def show_home_button():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def show_main_page():
-    # Display date range
-    st.markdown(f"""
-        <h2 style="text-align: center; margin-bottom: 20px; color: white;">
+    # Center the title without icon
+    st.markdown("""
+        <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
+        <div style="text-align: right; font-size: 14px; color: #888888; margin-bottom: 40px;">
             {format_date_range(st.session_state.current_start_date, st.session_state.current_end_date)}
-        </h2>
+        </div>
     """, unsafe_allow_html=True)
     
     # Check if submission is late
@@ -165,11 +166,6 @@ def show_main_page():
                 ⚠️ Submissão de relatório em atraso!
             </div>
         """, unsafe_allow_html=True)
-    
-    # Center the title without icon
-    st.markdown("""
-        <h1 style="text-align: center; margin-bottom: 40px;">DYNAMIC WALLET</h1>
-    """, unsafe_allow_html=True)
     
     # Create two columns for buttons
     col1, col2 = st.columns(2)
@@ -222,11 +218,20 @@ def show_categories():
         else [cat.value for cat in IncomeCategory]
     )
     
+    # Add custom CSS for category buttons
+    st.markdown("""
+        <style>
+        .stButton > button {
+            width: 100%;
+            margin: 2px 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Display category buttons
     for idx, category in enumerate(categories):
-        st.markdown('<div class="category-button">', unsafe_allow_html=True)
-        if st.button(category, key=f"category_{idx}"):
+        if st.button(category, key=f"category_{idx}", use_container_width=True):
             navigate_to_form(category)
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def show_form():
     # Back button in form
