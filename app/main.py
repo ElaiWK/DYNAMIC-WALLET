@@ -8,6 +8,8 @@ import hashlib
 import pickle
 import base64
 import uuid
+import shutil
+import time
 
 from constants.config import (
     TransactionType,
@@ -1200,6 +1202,44 @@ def save_user_transactions(username, transactions):
     with open(transactions_file, "w") as f:
         json.dump(transactions, f)
 
+def safe_load_json(file_path, backup_prefix, default_value=None):
+    """Safely load JSON data from a file with error handling"""
+    if default_value is None:
+        default_value = []
+        
+    if not os.path.exists(file_path):
+        return default_value
+        
+    try:
+        with open(file_path, "r") as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        # Log the error
+        print(f"Erro ao carregar arquivo JSON {file_path}: {str(e)}")
+        
+        # Backup the corrupted file
+        dir_path = os.path.dirname(file_path)
+        file_name = os.path.basename(file_path)
+        backup_file = os.path.join(dir_path, f"{backup_prefix}_{file_name}_{int(time.time())}")
+        try:
+            shutil.copy2(file_path, backup_file)
+            print(f"Backup do arquivo corrompido criado: {backup_file}")
+        except Exception as backup_error:
+            print(f"Erro ao criar backup: {str(backup_error)}")
+        
+        # Create a new empty file
+        try:
+            with open(file_path, "w") as f:
+                json.dump(default_value, f)
+            print(f"Novo arquivo vazio criado: {file_path}")
+        except Exception as write_error:
+            print(f"Erro ao criar novo arquivo: {str(write_error)}")
+        
+        return default_value
+    except Exception as e:
+        print(f"Erro desconhecido ao carregar arquivo JSON {file_path}: {str(e)}")
+        return default_value
+
 def load_user_transactions(username):
     """Load user transactions from a JSON file"""
     if not username:
@@ -1208,21 +1248,7 @@ def load_user_transactions(username):
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
     
-    if os.path.exists(transactions_file):
-        with open(transactions_file, "r") as f:
-            return json.load(f)
-    return []
-
-def save_user_history(username, history):
-    """Save user history to a JSON file"""
-    if not username:
-        return
-    
-    user_dir = get_user_dir(username)
-    history_file = os.path.join(user_dir, "history.json")
-    
-    with open(history_file, "w") as f:
-        json.dump(history, f)
+    return safe_load_json(transactions_file, "corrupted_transactions")
 
 def load_user_history(username):
     """Load user history from a JSON file"""
@@ -1232,10 +1258,7 @@ def load_user_history(username):
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
     
-    if os.path.exists(history_file):
-        with open(history_file, "r") as f:
-            return json.load(f)
-    return []
+    return safe_load_json(history_file, "corrupted_history")
 
 def main():
     # Debug: Show current authentication state
