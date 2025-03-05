@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
+import yaml
+import os
+from yaml.loader import SafeLoader
+import streamlit_authenticator as stauth
 
 from constants.config import (
     TransactionType,
@@ -21,6 +25,14 @@ from utils.helpers import (
     create_transaction_df,
     get_period_summary
 )
+from utils.user_data import (
+    load_user_transactions,
+    save_user_transactions,
+    load_user_history,
+    save_user_history,
+    load_user_settings,
+    save_user_settings
+)
 
 # Page config
 st.set_page_config(
@@ -29,23 +41,11 @@ st.set_page_config(
     layout="wide"
 )
 
-def get_week_dates(date):
-    # Get Monday (start) of the week
-    monday = date - timedelta(days=date.weekday())
-    # Get Sunday (end) of the week
-    sunday = monday + timedelta(days=6)
-    return monday, sunday
-
-def format_date_range(start_date, end_date):
-    return f"De {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
-
-def get_next_week_dates(current_end_date):
-    next_monday = current_end_date + timedelta(days=1)
-    next_sunday = next_monday + timedelta(days=6)
-    return next_monday, next_sunday
-
-def is_submission_late(end_date):
-    return datetime.now().date() > end_date
+def load_config():
+    """Load authentication configuration from file."""
+    with open('data/config.yaml') as file:
+        config = yaml.load(file, Loader=yaml.SafeLoader)
+    return config
 
 # Initialize session state
 if "transactions" not in st.session_state:
@@ -66,12 +66,76 @@ if "current_start_date" not in st.session_state:
     end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
     st.session_state.current_start_date = start_date
     st.session_state.current_end_date = end_date
+# Authentication state
+if "authentication_status" not in st.session_state:
+    st.session_state.authentication_status = None
+if "username" not in st.session_state:
+    st.session_state.username = None
+if "name" not in st.session_state:
+    st.session_state.name = None
+
+def load_user_data(username):
+    """Load a user's data from persistent storage."""
+    # Load transactions
+    st.session_state.transactions = load_user_transactions(username)
+    
+    # Load history
+    st.session_state.history = load_user_history(username)
+    
+    # Load settings (dates, etc.)
+    settings = load_user_settings(username)
+    if settings:
+        for key, value in settings.items():
+            st.session_state[key] = value
+    else:
+        # Default settings if none exists
+        start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
+        end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
+        st.session_state.current_start_date = start_date
+        st.session_state.current_end_date = end_date
+
+def save_user_data(username):
+    """Save user data to persistent storage."""
+    # Save transactions
+    save_user_transactions(username, st.session_state.transactions)
+    
+    # Save history
+    save_user_history(username, st.session_state.history)
+    
+    # Save settings
+    settings = {
+        'current_start_date': st.session_state.current_start_date,
+        'current_end_date': st.session_state.current_end_date,
+    }
+    save_user_settings(username, settings)
 
 def reset_state():
     st.session_state.transactions = []
     st.session_state.page = "main"
     st.session_state.transaction_type = None
     st.session_state.category = None
+    
+    # Save the reset state for the user
+    if st.session_state.authentication_status:
+        save_user_data(st.session_state.username)
+
+def get_week_dates(date):
+    # Get Monday (start) of the week
+    monday = date - timedelta(days=date.weekday())
+    # Get Sunday (end) of the week
+    sunday = monday + timedelta(days=6)
+    return monday, sunday
+
+def format_date_range(start_date, end_date):
+    return f"De {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
+
+def get_next_week_dates(current_end_date):
+    next_monday = current_end_date + timedelta(days=1)
+    next_sunday = next_monday + timedelta(days=6)
+    return next_monday, next_sunday
+
+def is_submission_late(end_date):
+    return datetime.now().date() > end_date
 
 def navigate_to_categories(transaction_type):
     st.session_state.page = "categories"
@@ -928,36 +992,97 @@ def save_transaction(date, type_, category, description, amount):
         "Amount": amount
     }
     st.session_state.transactions.append(transaction)
+    
+    # Save updated transactions for the user
+    if st.session_state.authentication_status:
+        save_user_data(st.session_state.username)
 
 def main():
-    # Create tabs
-    tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
+    # Load the authentication configuration
+    config = load_config()
     
-    # Handle tab switching
-    if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "Registar"
+    # Create an authenticator object
+    authenticator = stauth.Authenticate(
+        config['credentials'],
+        config['cookie']['name'],
+        config['cookie']['key'],
+        config['cookie']['expiry_days'],
+        config['preauthorized']
+    )
     
-    # Only update active tab when explicitly switching tabs
-    if tab2.id and tab2.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Relatório"
-    elif tab1.id and tab1.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Registar"
-    elif tab3.id and tab3.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Histórico"
-    
-    with tab1:
-        if st.session_state.page == "main":
-            show_main_page()
-        elif st.session_state.page == "categories":
-            show_categories()
-        elif st.session_state.page == "form":
-            show_form()
-    
-    with tab2:
-        show_report_tab()
-    
-    with tab3:
-        show_history_tab()
+    # If not authenticated, show login form
+    if not st.session_state.authentication_status:
+        st.image("https://img.freepik.com/free-vector/gradient-perspective-logo-design_23-2149700161.jpg", width=150)
+        st.title("MD Wallet")
+        st.subheader("Login")
+        
+        # Display the login form
+        name, authentication_status, username = authenticator.login("Login", "main")
+        
+        # Store authentication status in session state
+        st.session_state.authentication_status = authentication_status
+        st.session_state.username = username
+        st.session_state.name = name
+        
+        # Handle authentication results
+        if st.session_state.authentication_status == False:
+            st.error("Usuário/senha incorretos")
+        elif st.session_state.authentication_status == None:
+            st.warning("Por favor, digite seu usuário e senha")
+            
+        # Show registration and password reset options
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Registrar Novo Usuário"):
+                # In a real app, you would implement user registration here
+                # For now, we'll show a message about contacting admin
+                st.info("Entre em contato com o administrador para criar uma nova conta.")
+        with col2:
+            if st.button("Esqueci Minha Senha"):
+                # In a real app, you would implement password reset here
+                # For now, we'll show a message about contacting admin
+                st.info("Entre em contato com o administrador para redefinir sua senha.")
+                
+    # If authenticated, load user data and show the app
+    elif st.session_state.authentication_status:
+        # Load user data on first login
+        if "data_loaded" not in st.session_state or not st.session_state.data_loaded:
+            load_user_data(st.session_state.username)
+            st.session_state.data_loaded = True
+        
+        # Show logout button in sidebar
+        with st.sidebar:
+            st.write(f"Bem-vindo, {st.session_state.name}")
+            authenticator.logout("Logout", "sidebar")
+        
+        # Create tabs
+        tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
+        
+        # Handle tab switching
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = "Registar"
+        
+        # Only update active tab when explicitly switching tabs
+        if tab2.id and tab2.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Relatório"
+        elif tab1.id and tab1.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Registar"
+        elif tab3.id and tab3.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Histórico"
+        
+        with tab1:
+            if st.session_state.page == "main":
+                show_main_page()
+            elif st.session_state.page == "categories":
+                show_categories()
+            elif st.session_state.page == "form":
+                show_form()
+        
+        with tab2:
+            show_report_tab()
+        
+        with tab3:
+            show_history_tab()
 
 def show_history_tab():
     st.subheader("Histórico de Relatórios")
@@ -1222,6 +1347,10 @@ def show_report_tab():
                 next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
                 st.session_state.current_start_date = next_start
                 st.session_state.current_end_date = next_end
+                
+                # Save updated user data
+                if st.session_state.authentication_status:
+                    save_user_data(st.session_state.username)
                 
                 # Reset state
                 reset_state()

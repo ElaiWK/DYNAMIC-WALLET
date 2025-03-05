@@ -1,0 +1,17 @@
+credentials:
+  usernames:
+    admin:
+      email: admin@exemplo.com
+      name: Administrador
+      password: $2b$12$vV4FQnZcqGsNQ9J4qr5n2eZ/nU0vwTUkNwV9Nm9D.vVnH5a4V/vkK  # password: admin123
+    usuario1:
+      email: usuario1@exemplo.com
+      name: Usuário 1
+      password: $2b$12$UlrcQ9l2GpwNr8z.5l.XZedC3ZM/Oq8UYzTg/gE/3jDnGIOgBfJeS  # password: senha123
+cookie:
+  expiry_days: 30
+  key: md_wallet_some_signature_key
+  name: md_wallet_cookie
+preauthorized:
+  emails:
+    - admin@exemplo.com 
