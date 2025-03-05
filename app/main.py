@@ -940,22 +940,23 @@ def main():
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width=80,
+                            width="small",
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width=120,
+                            width="small",
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width=400,
-                            help="Descrição da transação"
+                            help="Descrição da transação",
+                            width="medium",
+                            max_chars=50  # This will force text to wrap
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width=100,
+                            width="small",
                             help="Valor da transação"
                         )
                     },
@@ -971,22 +972,23 @@ def main():
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width=80,
+                            width="small",
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width=120,
+                            width="small",
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width=400,
-                            help="Descrição da transação"
+                            help="Descrição da transação",
+                            width="medium",
+                            max_chars=50  # This will force text to wrap
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width=100,
+                            width="small",
                             help="Valor da transação"
                         )
                     },
