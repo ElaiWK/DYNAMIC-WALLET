@@ -24,6 +24,7 @@ class MealType(Enum):
 
 # HR Rates (€/hour)
 HR_RATES = {
+    "": 0,  # Empty default option
     "Júnior": 35,
     "Sénior": 40,
     "Júnior mais de 10 horas": 40,

@@ -153,6 +153,8 @@ def navigate_back():
                 del st.session_state.hr_role
             if "hr_date" in st.session_state:
                 del st.session_state.hr_date
+            if "hr_collaborator" in st.session_state:
+                del st.session_state.hr_collaborator
         st.session_state.page = "categories"
     elif st.session_state.page == "categories":
         st.session_state.page = "main"
@@ -344,9 +346,11 @@ def show_form():
     elif st.session_state.category == ExpenseCategory.HR.value:
         # Initialize session state for HR form
         if "hr_role" not in st.session_state:
-            st.session_state.hr_role = list(HR_RATES.keys())[0]
+            st.session_state.hr_role = ""  # Start with empty role
         if "hr_date" not in st.session_state:
             st.session_state.hr_date = datetime.now().date()
+        if "hr_collaborator" not in st.session_state:
+            st.session_state.hr_collaborator = ""
         
         # Date input at the top
         selected_date = st.date_input(
@@ -367,6 +371,16 @@ def show_form():
         )
         if new_role != st.session_state.hr_role:
             st.session_state.hr_role = new_role
+            st.rerun()
+        
+        # Collaborator name
+        new_collaborator = st.text_input(
+            "Nome do Colaborador",
+            value=st.session_state.hr_collaborator,
+            key="collaborator_input"
+        )
+        if new_collaborator != st.session_state.hr_collaborator:
+            st.session_state.hr_collaborator = new_collaborator
             st.rerun()
         
         # Add spacing
@@ -390,20 +404,31 @@ def show_form():
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
             if st.button("Submeter", key="submit_hr"):
-                description = f"Despesa RH para {st.session_state.hr_role}"
-                save_transaction(
-                    st.session_state.hr_date,
-                    TransactionType.EXPENSE.value,
-                    ExpenseCategory.HR.value,
-                    description,
-                    calculated_amount
-                )
-                st.success("Transação registrada com sucesso!")
-                # Reset form state
-                del st.session_state.hr_role
-                del st.session_state.hr_date
-                st.session_state.page = "main"
-                st.rerun()
+                # Validate fields
+                validation_error = None
+                if not st.session_state.hr_role:
+                    validation_error = "Por favor, selecione uma função"
+                elif not st.session_state.hr_collaborator.strip():
+                    validation_error = "Por favor, insira o nome do colaborador"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"Despesa RH para {st.session_state.hr_collaborator} ({st.session_state.hr_role})"
+                    save_transaction(
+                        st.session_state.hr_date,
+                        TransactionType.EXPENSE.value,
+                        ExpenseCategory.HR.value,
+                        description,
+                        calculated_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.hr_role
+                    del st.session_state.hr_date
+                    del st.session_state.hr_collaborator
+                    st.session_state.page = "main"
+                    st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
     
     else:
