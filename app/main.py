@@ -1263,8 +1263,24 @@ def save_user_history(username, history):
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
     
+    # Converter valores numpy.int64 para int padrão do Python
+    def convert_numpy_types(obj):
+        if isinstance(obj, dict):
+            return {k: convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_numpy_types(item) for item in obj]
+        elif isinstance(obj, np.int64):
+            return int(obj)
+        elif isinstance(obj, np.float64):
+            return float(obj)
+        else:
+            return obj
+    
+    # Converter todos os valores numpy antes da serialização
+    history_converted = convert_numpy_types(history)
+    
     with open(history_file, "w") as f:
-        json.dump(history, f)
+        json.dump(history_converted, f)
 
 def generate_pdf_report(username, report_data):
     """Generate a PDF report for a user's expense report"""
@@ -1961,11 +1977,14 @@ def show_report_tab():
         """, unsafe_allow_html=True)
         
         # Generate report button
-        if st.button("Gerar Relatório"):
+        if st.button("Submeter Relatório"):
             # Verificar se a data final é igual ou anterior à data atual
             today = datetime.now().date()
             if st.session_state.current_end_date > today:
                 st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({st.session_state.current_end_date.strftime('%Y-%m-%d')}) deve ser igual ou anterior à data atual ({today.strftime('%Y-%m-%d')}).")
+            # Verificar se a data final é anterior a 09/02/2025
+            elif st.session_state.current_end_date < datetime.strptime("09/02/2025", "%d/%m/%Y").date():
+                st.error("Não é possível submeter o relatório ainda. O relatório só pode ser submetido a partir de 09/02/2025.")
             else:
                 # Create a unique report number based on the current date
                 report_number = f"Relatório {st.session_state.report_counter}"
