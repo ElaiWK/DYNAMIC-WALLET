@@ -267,6 +267,16 @@ if "transaction_type" not in st.session_state:
     st.session_state.transaction_type = None
 if "category" not in st.session_state:
     st.session_state.category = None
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "report_counter" not in st.session_state:
+    st.session_state.report_counter = 1
+
+def reset_state():
+    st.session_state.transactions = []
+    st.session_state.page = "main"
+    st.session_state.transaction_type = None
+    st.session_state.category = None
 
 def navigate_to_categories(transaction_type):
     st.session_state.page = "categories"
@@ -1042,7 +1052,7 @@ def save_transaction(date, type_, category, description, amount):
 
 def main():
     # Create tabs
-    tab1, tab2 = st.tabs(["Registar", "Relatório"])
+    tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
     
     # Handle tab switching
     if "active_tab" not in st.session_state:
@@ -1053,6 +1063,8 @@ def main():
         st.session_state.active_tab = "Relatório"
     elif tab1.id and tab1.id != st.session_state.active_tab:
         st.session_state.active_tab = "Registar"
+    elif tab3.id and tab3.id != st.session_state.active_tab:
+        st.session_state.active_tab = "Histórico"
     
     with tab1:
         if st.session_state.page == "main":
@@ -1063,174 +1075,210 @@ def main():
             show_form()
     
     with tab2:
-        # Simple title for the report tab
-        st.subheader("Relatório")
-        
-        if st.session_state.transactions:
-            df = create_transaction_df(st.session_state.transactions)
+        show_report_tab()
+    
+    with tab3:
+        show_history_tab()
+
+def show_history_tab():
+    st.subheader("Histórico de Relatórios")
+    
+    if not st.session_state.history:
+        st.info("Não existem relatórios guardados.")
+        return
+    
+    for report in st.session_state.history:
+        st.markdown(f"""
+        <div style="margin: 20px 0; padding: 20px; background-color: #1E1E1E; border-radius: 8px;">
+            <h3 style="color: white; margin-bottom: 20px;">Relatório #{report['number']}</h3>
             
-            # Add filters
-            col1, col2 = st.columns(2)
-            with col1:
-                type_filter = st.selectbox(
-                    "Tipo",
-                    options=["Todos", TransactionType.EXPENSE.value, TransactionType.INCOME.value],
-                    key="type_filter"
-                )
-            
-            with col2:
-                # Filter categories based on selected type
-                if type_filter == TransactionType.EXPENSE.value:
-                    categories = [cat.value for cat in ExpenseCategory]
-                elif type_filter == TransactionType.INCOME.value:
-                    categories = [cat.value for cat in IncomeCategory]
-                else:  # "Todos"
-                    categories = ([cat.value for cat in ExpenseCategory] + 
-                                [cat.value for cat in IncomeCategory])
-                
-                category_filter = st.selectbox(
-                    "Categoria",
-                    options=["Todas"] + categories,
-                    key="category_filter"
-                )
-            
-            # Apply filters
-            filtered_df = df.copy()
-            if type_filter != "Todos":
-                filtered_df = filtered_df[filtered_df["Type"] == type_filter]
-            if category_filter != "Todas":
-                filtered_df = filtered_df[filtered_df["Category"] == category_filter]
-            
-            # Split dataframe by type
-            income_df = filtered_df[filtered_df["Type"] == TransactionType.INCOME.value].copy()
-            expense_df = filtered_df[filtered_df["Type"] == TransactionType.EXPENSE.value].copy()
-            
-            # Sort each dataframe by date
-            income_df = income_df.sort_values("Date", ascending=True)
-            expense_df = expense_df.sort_values("Date", ascending=True)
-            
-            # Format amounts for display
-            income_df["Amount"] = income_df["Amount"].apply(format_currency)
-            expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
-            
-            # Format dates to dd/MM
-            income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
-            expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
-            
-            # Clean up descriptions by removing redundant valor information
-            def clean_description(row):
-                desc = row["Description"]
-                amount = row["Amount"]
-                # Remove the valor part if it matches the final amount
-                if f"Valor: {amount}" in desc:
-                    desc = desc.replace(f" (Valor: {amount})", "")
-                return desc
-            
-            # Only apply clean_description if DataFrames are not empty
-            if not income_df.empty:
-                income_df["Description"] = income_df.apply(clean_description, axis=1)
-            if not expense_df.empty:
-                expense_df["Description"] = expense_df.apply(clean_description, axis=1)
-            
-            # Display income transactions if they exist
-            if not income_df.empty:
-                st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
-                for _, row in income_df.iterrows():
-                    with st.container():
-                        st.markdown(f"""
-                        <div style="
-                            background-color: #1E1E1E;
-                            border-left: 4px solid #4CAF50;
-                            padding: 1rem;
-                            margin: 0.5rem 0;
-                            border-radius: 4px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #CCCCCC;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                            </div>
-                            <div style="margin-bottom: 0.5rem;">
-                                <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                                    {row['Category']}
-                                </span>
-                            </div>
-                            <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                                {row['Description']}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-            
-            # Display expense transactions if they exist
-            if not expense_df.empty:
-                st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
-                for _, row in expense_df.iterrows():
-                    with st.container():
-                        st.markdown(f"""
-                        <div style="
-                            background-color: #1E1E1E;
-                            border-left: 4px solid #ff4b4b;
-                            padding: 1rem;
-                            margin: 0.5rem 0;
-                            border-radius: 4px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #CCCCCC;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                            </div>
-                            <div style="margin-bottom: 0.5rem;">
-                                <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                                    {row['Category']}
-                                </span>
-                            </div>
-                            <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                                {row['Description']}
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-            
-            # Calculate summary statistics
-            total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
-            total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
-            net_amount = total_income - total_expense
-            
-            # Show summary statistics
-            st.write("")
-            
-            # Create a more visible summary section with line-by-line format
-            st.markdown("""
-            <div style="margin: 20px 0;">
-                <div style="margin-bottom: 15px;">
-                    <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{}</span>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{}</span>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="font-size: 16px; color: white;">Saldo: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{}</span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">({})</span>
-                </div>
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #4CAF50; font-size: 18px;">Entradas</h4>
+                {report['income_html']}
             </div>
-            """.format(
-                format_currency(total_income),
-                format_currency(total_expense),
-                format_currency(abs(net_amount)),
-                'A entregar' if net_amount >= 0 else 'A receber'
-            ), unsafe_allow_html=True)
             
-            # Add submit button
-            st.write("")
-            submit_button_container = st.container()
-            with submit_button_container:
-                st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-                if st.button("Submeter Relatório", key="submit_report"):
-                    pass  # Functionality to be added later
-                st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.info("Não existem transações registradas.")
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #ff4b4b; font-size: 18px;">Saídas</h4>
+                {report['expense_html']}
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                {report['summary_html']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+def show_report_tab():
+    # Simple title for the report tab
+    st.subheader("Relatório")
+    
+    if st.session_state.transactions:
+        df = create_transaction_df(st.session_state.transactions)
+        
+        # Add filters
+        col1, col2 = st.columns(2)
+        with col1:
+            type_filter = st.selectbox(
+                "Tipo",
+                options=["Todos", TransactionType.EXPENSE.value, TransactionType.INCOME.value],
+                key="type_filter"
+            )
+        
+        with col2:
+            # Filter categories based on selected type
+            if type_filter == TransactionType.EXPENSE.value:
+                categories = [cat.value for cat in ExpenseCategory]
+            elif type_filter == TransactionType.INCOME.value:
+                categories = [cat.value for cat in IncomeCategory]
+            else:  # "Todos"
+                categories = ([cat.value for cat in ExpenseCategory] + 
+                            [cat.value for cat in IncomeCategory])
+            
+            category_filter = st.selectbox(
+                "Categoria",
+                options=["Todas"] + categories,
+                key="category_filter"
+            )
+        
+        # Apply filters
+        filtered_df = df.copy()
+        if type_filter != "Todos":
+            filtered_df = filtered_df[filtered_df["Type"] == type_filter]
+        if category_filter != "Todas":
+            filtered_df = filtered_df[filtered_df["Category"] == category_filter]
+        
+        # Split dataframe by type
+        income_df = filtered_df[filtered_df["Type"] == TransactionType.INCOME.value].copy()
+        expense_df = filtered_df[filtered_df["Type"] == TransactionType.EXPENSE.value].copy()
+        
+        # Sort each dataframe by date
+        income_df = income_df.sort_values("Date", ascending=True)
+        expense_df = expense_df.sort_values("Date", ascending=True)
+        
+        # Format amounts for display
+        income_df["Amount"] = income_df["Amount"].apply(format_currency)
+        expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
+        
+        # Format dates to dd/MM
+        income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
+        expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+        
+        # Store HTML for income transactions
+        income_html = ""
+        if not income_df.empty:
+            for _, row in income_df.iterrows():
+                income_html += f"""
+                <div style="
+                    background-color: #1E1E1E;
+                    border-left: 4px solid #4CAF50;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #CCCCCC;">{row['Date']}</span>
+                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                            {row['Category']}
+                        </span>
+                    </div>
+                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                        {row['Description']}
+                    </div>
+                </div>
+                """
+        
+        # Store HTML for expense transactions
+        expense_html = ""
+        if not expense_df.empty:
+            for _, row in expense_df.iterrows():
+                expense_html += f"""
+                <div style="
+                    background-color: #1E1E1E;
+                    border-left: 4px solid #ff4b4b;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #CCCCCC;">{row['Date']}</span>
+                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                            {row['Category']}
+                        </span>
+                    </div>
+                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                        {row['Description']}
+                    </div>
+                </div>
+                """
+        
+        # Display income transactions
+        if not income_df.empty:
+            st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
+            st.markdown(income_html, unsafe_allow_html=True)
+        
+        # Display expense transactions
+        if not expense_df.empty:
+            st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
+            st.markdown(expense_html, unsafe_allow_html=True)
+        
+        # Calculate summary statistics
+        total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
+        total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
+        net_amount = total_income - total_expense
+        
+        # Show summary statistics
+        st.write("")
+        
+        # Create summary HTML
+        summary_html = f"""
+        <div style="margin: 20px 0;">
+            <div style="margin-bottom: 15px;">
+                <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Total Entradas: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(total_income)}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Total Saídas: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(total_expense)}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Saldo: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(net_amount))}</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if net_amount >= 0 else 'A receber'})</span>
+            </div>
+        </div>
+        """
+        
+        # Display summary
+        st.markdown(summary_html, unsafe_allow_html=True)
+        
+        # Add submit button
+        st.write("")
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter Relatório", key="submit_report"):
+                # Save current report to history
+                st.session_state.history.append({
+                    'number': st.session_state.report_counter,
+                    'income_html': income_html,
+                    'expense_html': expense_html,
+                    'summary_html': summary_html
+                })
+                st.session_state.report_counter += 1
+                
+                # Reset state
+                reset_state()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("Não existem transações registradas.")
 
 if __name__ == "__main__":
     main() 
