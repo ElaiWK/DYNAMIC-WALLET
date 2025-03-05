@@ -8,12 +8,11 @@ import sys
 from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
 import bcrypt
-
-# Fix imports by using absolute paths
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir)
-
+import json
+import calendar
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 from constants.config import (
     TransactionType,
     ExpenseCategory,
@@ -23,6 +22,21 @@ from constants.config import (
     DATE_FORMAT,
     TRANSACTION_HEADERS
 )
+from utils.mongodb_utils import (
+    save_user_transactions_to_db, load_user_transactions_from_db,
+    save_user_history_to_db, load_user_history_from_db,
+    save_user_settings_to_db, load_user_settings_from_db,
+    save_to_local_fallback, load_from_local_fallback
+)
+from utils.env_loader import load_environment_variables
+
+# Fix imports by using absolute paths
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+
+# Load environment variables
+load_environment_variables()
 
 # Import helpers directly
 def get_week_period(date):
@@ -67,156 +81,83 @@ def get_period_summary(df):
 
 # Create simplified user data functions
 def load_user_transactions(username):
-    """Load a user's transactions from session state or initialize empty."""
-    if "all_user_transactions" not in st.session_state:
-        st.session_state.all_user_transactions = {}
+    """Load user transactions from storage."""
+    # First try to load from MongoDB
+    transactions = load_user_transactions_from_db(username)
     
-    return st.session_state.all_user_transactions.get(username, [])
+    # If MongoDB failed, fall back to local storage
+    if not transactions:
+        transactions = load_from_local_fallback(username, "transactions")
+    
+    return transactions if transactions else []
 
 def save_user_transactions(username, transactions):
-    """Save a user's transactions to session state."""
-    if "all_user_transactions" not in st.session_state:
-        st.session_state.all_user_transactions = {}
+    """Save user transactions to storage."""
+    # Try to save to MongoDB first
+    success = save_user_transactions_to_db(username, transactions)
     
-    st.session_state.all_user_transactions[username] = transactions
+    # If MongoDB failed, fall back to local storage
+    if not success:
+        save_to_local_fallback(username, "transactions", transactions)
 
 def load_user_history(username):
-    """Load a user's history from session state or initialize empty."""
-    if "all_user_history" not in st.session_state:
-        st.session_state.all_user_history = {}
+    """Load user history from storage."""
+    # First try to load from MongoDB
+    history = load_user_history_from_db(username)
     
-    return st.session_state.all_user_history.get(username, [])
+    # If MongoDB failed, fall back to local storage
+    if not history:
+        history = load_from_local_fallback(username, "history")
+    
+    return history if history else []
 
 def save_user_history(username, history):
-    """Save a user's history to session state."""
-    if "all_user_history" not in st.session_state:
-        st.session_state.all_user_history = {}
+    """Save user history to storage."""
+    # Try to save to MongoDB first
+    success = save_user_history_to_db(username, history)
     
-    st.session_state.all_user_history[username] = history
+    # If MongoDB failed, fall back to local storage
+    if not success:
+        save_to_local_fallback(username, "history", history)
 
 def load_user_settings(username):
-    """Load a user's settings from session state or initialize empty."""
-    if "all_user_settings" not in st.session_state:
-        st.session_state.all_user_settings = {}
+    """Load user settings from storage."""
+    # First try to load from MongoDB
+    settings = load_user_settings_from_db(username)
     
-    return st.session_state.all_user_settings.get(username, {})
+    # If MongoDB failed, fall back to local storage
+    if not settings:
+        settings = load_from_local_fallback(username, "settings")
+    
+    return settings if settings else {}
 
 def save_user_settings(username, settings):
-    """Save a user's settings to session state."""
-    if "all_user_settings" not in st.session_state:
-        st.session_state.all_user_settings = {}
+    """Save user settings to storage."""
+    # Try to save to MongoDB first
+    success = save_user_settings_to_db(username, settings)
     
-    st.session_state.all_user_settings[username] = settings
-
-# Page config
-st.set_page_config(
-    page_title="MD Wallet - Expense Tracker",
-    page_icon="💰",
-    layout="wide"
-)
-
-# Apply custom CSS to fix the shaking issue
-st.markdown("""
-<style>
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-    .stButton button {
-        width: 100%;
-    }
-    .login-container {
-        max-width: 500px;
-        margin: 0 auto;
-    }
-    /* Hide Streamlit elements */
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 1200px;
-    }
-    /* Title styling */
-    .app-title {
-        text-align: center;
-        color: #1E88E5;
-        font-size: 2.5rem !important;
-        margin-bottom: 2rem;
-    }
-    /* Input field styling */
-    .stTextInput input {
-        width: 100% !important;
-        padding: 0.5rem;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-def load_config():
-    """Load authentication configuration from file."""
-    # Get the absolute path to the config file
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    config_path = os.path.join(base_dir, 'data', 'config.yaml')
-    
-    print(f"Loading config from: {config_path}")
-    print(f"File exists: {os.path.exists(config_path)}")
-    
-    try:
-        with open(config_path) as file:
-            config = yaml.load(file, Loader=SafeLoader)
-        print(f"Config loaded successfully: {config.keys()}")
-        return config
-    except Exception as e:
-        print(f"Error loading config: {e}")
-        st.error(f"Error loading config: {e}")
-        return None
-
-# Initialize session state
-if "transactions" not in st.session_state:
-    st.session_state.transactions = []
-if "page" not in st.session_state:
-    st.session_state.page = "main"
-if "transaction_type" not in st.session_state:
-    st.session_state.transaction_type = None
-if "category" not in st.session_state:
-    st.session_state.category = None
-if "history" not in st.session_state:
-    st.session_state.history = []
-if "report_counter" not in st.session_state:
-    st.session_state.report_counter = 1
-# Initialize date range
-if "current_start_date" not in st.session_state:
-    start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
-    end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
-    st.session_state.current_start_date = start_date
-    st.session_state.current_end_date = end_date
-# Authentication state
-if "authentication_status" not in st.session_state:
-    st.session_state.authentication_status = None
-if "username" not in st.session_state:
-    st.session_state.username = None
-if "name" not in st.session_state:
-    st.session_state.name = None
-if "data_loaded" not in st.session_state:
-    st.session_state.data_loaded = False
+    # If MongoDB failed, fall back to local storage
+    if not success:
+        save_to_local_fallback(username, "settings", settings)
 
 def load_user_data(username):
-    """Load a user's data from persistent storage."""
+    """Load user data from storage."""
     # Load transactions
-    st.session_state.transactions = load_user_transactions(username)
+    if "transactions" not in st.session_state:
+        st.session_state.transactions = load_user_transactions(username)
     
     # Load history
-    st.session_state.history = load_user_history(username)
+    if "history" not in st.session_state:
+        st.session_state.history = load_user_history(username)
     
-    # Load settings (dates, etc.)
+    # Load settings
     settings = load_user_settings(username)
     if settings:
-        for key, value in settings.items():
-            st.session_state[key] = value
-    else:
-        # Default settings if none exists
-        start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
-        end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
-        st.session_state.current_start_date = start_date
-        st.session_state.current_end_date = end_date
+        # Set current date range if available
+        if 'current_start_date' in settings:
+            st.session_state.current_start_date = settings['current_start_date']
+        if 'current_end_date' in settings:
+            st.session_state.current_end_date = settings['current_end_date']
 
 def save_user_data(username):
     """Save user data to persistent storage."""

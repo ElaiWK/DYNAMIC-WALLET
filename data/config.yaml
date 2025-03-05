@@ -9,7 +9,7 @@ credentials:
       name: Usuario 1
       password: $2b$12$mrWZdi0LGT5d/UCMPwsHMuO5V2IXuEYi1bBQkddJtT3prUiYOLQre  # Password: user123
 cookie:
-  expiry_days: 0
+  expiry_days: 365
   key: dynamic_wallet_secure_key_2024
   name: dynamic_wallet_auth
 preauthorized:
