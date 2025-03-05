@@ -174,8 +174,20 @@ def show_login_page():
                         st.session_state.history = load_user_history(username) or []
                         st.session_state.user_data_loaded = True
                         
-                        st.success("Login successful!")
+                        # Show success message and force a complete rerun
+                        st.success("Login successful! Redirecting to dashboard...")
                         st.write("Session state:", st.session_state)
+                        
+                        # Use JavaScript to force a complete page reload
+                        st.markdown("""
+                        <script>
+                            setTimeout(function() {
+                                window.location.href = window.location.pathname;
+                            }, 1500);
+                        </script>
+                        """, unsafe_allow_html=True)
+                        
+                        # Also try the standard rerun as a fallback
                         st.rerun()
                     else:
                         st.error("Invalid username or password")
@@ -1184,17 +1196,14 @@ def main():
     st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
     st.sidebar.write("Debug - Username:", st.session_state.get("username", "None"))
     
-    # Check if user is authenticated
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    
-    if not st.session_state.authenticated:
+    # Force authentication check on each run
+    if not st.session_state.get("authenticated", False):
         st.sidebar.warning("Not authenticated - showing login page")
         show_login_page()
         return
     
     # Make sure username is set
-    if "username" not in st.session_state or not st.session_state.username:
+    if not st.session_state.get("username"):
         st.error("Session error: Username not set. Please log in again.")
         st.session_state.authenticated = False
         show_login_page()
@@ -1215,6 +1224,15 @@ def main():
         st.session_state.username = None
         if "_cached_credentials" in st.session_state:
             del st.session_state["_cached_credentials"]
+            
+        # Use JavaScript to force a complete page reload
+        st.markdown("""
+        <script>
+            setTimeout(function() {
+                window.location.href = window.location.pathname;
+            }, 500);
+        </script>
+        """, unsafe_allow_html=True)
         st.rerun()
     
     # Initialize page state if not already done
@@ -1609,10 +1627,15 @@ def show_report_tab():
 if __name__ == "__main__":
     # Always force the login page to show on initial load
     # This is critical for both local and cloud deployments
-    if "page_load_complete" not in st.session_state:
+    if "first_load" not in st.session_state:
+        # Reset authentication state completely
+        for key in list(st.session_state.keys()):
+            if key != "first_load":
+                del st.session_state[key]
+        
         st.session_state.authenticated = False
         st.session_state.username = None
         st.session_state.user_data_loaded = False
-        st.session_state.page_load_complete = True
+        st.session_state.first_load = True
     
     main() 
