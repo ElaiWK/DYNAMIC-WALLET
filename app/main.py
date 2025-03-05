@@ -259,6 +259,35 @@ def show_categories():
             navigate_to_form(category)
 
 def show_form():
+    # Add global CSS for amount display in forms
+    st.markdown("""
+        <style>
+        .amount-title {
+            color: #FFFFFF;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .amount-container {
+            background-color: #262730;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .amount-container .value {
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .amount-container .status {
+            color: #888888;
+            font-size: 16px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     # Back button in form
     st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories"):
