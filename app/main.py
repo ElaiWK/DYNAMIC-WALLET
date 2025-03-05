@@ -339,8 +339,8 @@ def show_form():
             )
         
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -433,8 +433,8 @@ def show_form():
         # Calculate and display amount
         amount = HR_RATES[st.session_state.hr_role]
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -534,8 +534,8 @@ def show_form():
         
         # Display amount
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.purchase_amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.purchase_amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -624,8 +624,8 @@ def show_form():
         
         # Display amount
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -711,8 +711,8 @@ def show_form():
         
         # Display amount
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.service_amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.service_amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -798,8 +798,8 @@ def show_form():
         
         # Display amount
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_income_amount)}</h2>
+        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_income_amount)}</h2>
         </div>
         """, unsafe_allow_html=True)
         
