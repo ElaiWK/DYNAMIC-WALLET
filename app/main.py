@@ -885,7 +885,14 @@ def main():
             show_form()
     
     with tab2:
-        st.subheader("Relatório de Transações")
+        # Add a prominent test indicator and simpler title
+        st.markdown("""
+            <div style="background-color: #ff4b4b; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
+                <h2 style="margin: 0;">TEST INDICATOR</h2>
+            </div>
+            <h2>Relatório</h2>
+        """, unsafe_allow_html=True)
+        
         if st.session_state.transactions:
             df = create_transaction_df(st.session_state.transactions)
             
@@ -932,30 +939,64 @@ def main():
             
             # Display income transactions if they exist
             if not income_df.empty:
-                st.subheader("Entradas")
+                st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     income_df.drop("Type", axis=1),  # Remove Type column
                     column_config={
-                        "Date": "Data",
-                        "Category": "Categoria",
-                        "Description": "Descrição",
-                        "Amount": "Valor"
+                        "Date": st.column_config.TextColumn(
+                            "Data",
+                            width="small",
+                            help="Data da transação"
+                        ),
+                        "Category": st.column_config.TextColumn(
+                            "Categoria",
+                            width="medium",
+                            help="Categoria da transação"
+                        ),
+                        "Description": st.column_config.TextColumn(
+                            "Descrição",
+                            width="large",
+                            help="Descrição da transação"
+                        ),
+                        "Amount": st.column_config.TextColumn(
+                            "Valor",
+                            width="small",
+                            help="Valor da transação"
+                        )
                     },
-                    hide_index=True
+                    hide_index=True,
+                    use_container_width=True
                 )
             
             # Display expense transactions if they exist
             if not expense_df.empty:
-                st.subheader("Saídas")
+                st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     expense_df.drop("Type", axis=1),  # Remove Type column
                     column_config={
-                        "Date": "Data",
-                        "Category": "Categoria",
-                        "Description": "Descrição",
-                        "Amount": "Valor"
+                        "Date": st.column_config.TextColumn(
+                            "Data",
+                            width="small",
+                            help="Data da transação"
+                        ),
+                        "Category": st.column_config.TextColumn(
+                            "Categoria",
+                            width="medium",
+                            help="Categoria da transação"
+                        ),
+                        "Description": st.column_config.TextColumn(
+                            "Descrição",
+                            width="large",
+                            help="Descrição da transação"
+                        ),
+                        "Amount": st.column_config.TextColumn(
+                            "Valor",
+                            width="small",
+                            help="Valor da transação"
+                        )
                     },
-                    hide_index=True
+                    hide_index=True,
+                    use_container_width=True
                 )
             
             # Calculate summary statistics
@@ -965,15 +1006,44 @@ def main():
             
             # Show summary statistics
             st.write("")
-            st.write("Resumo:")
             
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Entradas", format_currency(total_income))
-            with col2:
-                st.metric("Total Saídas", format_currency(total_expense))
-            with col3:
-                st.metric("Saldo", format_currency(net_amount))
+            # Create a more compact summary section with custom styling
+            st.markdown("""
+            <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <span style="font-size: 13px; color: #666;">Resumo:</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 20px;">
+                    <div>
+                        <span style="font-size: 13px; color: #666;">Total Entradas:</span>
+                        <span style="font-size: 13px; color: #4CAF50; margin-left: 5px;">{}</span>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #666;">Total Saídas:</span>
+                        <span style="font-size: 13px; color: #ff4b4b; margin-left: 5px;">{}</span>
+                    </div>
+                    <div>
+                        <span style="font-size: 13px; color: #666;">Saldo:</span>
+                        <span style="font-size: 13px; color: {}; margin-left: 5px;">{} ({})</span>
+                    </div>
+                </div>
+            </div>
+            """.format(
+                format_currency(total_income),
+                format_currency(total_expense),
+                '#4CAF50' if net_amount >= 0 else '#ff4b4b',
+                format_currency(abs(net_amount)),
+                'A entregar' if net_amount >= 0 else 'A receber'
+            ), unsafe_allow_html=True)
+            
+            # Add submit button
+            st.write("")
+            submit_button_container = st.container()
+            with submit_button_container:
+                st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+                if st.button("Submeter Relatório", key="submit_report"):
+                    pass  # Functionality to be added later
+                st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("Não existem transações registradas.")
 
