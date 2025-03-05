@@ -2121,11 +2121,36 @@ def show_report_tab():
                 # Remover transações do período atual
                 if st.session_state.transactions:
                     # Filtrar transações para manter apenas as que não estão no período atual
-                    st.session_state.transactions = [
-                        t for t in st.session_state.transactions 
-                        if not (datetime.strptime(t["date"], "%Y-%m-%d").date() >= st.session_state.current_start_date 
-                               and datetime.strptime(t["date"], "%Y-%m-%d").date() <= st.session_state.current_end_date)
-                    ]
+                    # ou que não possuem a chave 'date'
+                    filtered_transactions = []
+                    for t in st.session_state.transactions:
+                        # Verificar se a transação tem a chave 'date' ou 'Date'
+                        date_key = None
+                        if "date" in t:
+                            date_key = "date"
+                        elif "Date" in t:
+                            date_key = "Date"
+                            
+                        if date_key is None:
+                            # Se não tiver nenhuma chave de data, manter a transação
+                            filtered_transactions.append(t)
+                            print(f"Transação sem data encontrada: {t}")
+                            continue
+                            
+                        # Converter a data da transação para objeto date
+                        try:
+                            transaction_date = datetime.strptime(t[date_key], "%Y-%m-%d").date()
+                            # Verificar se a data está fora do período atual
+                            if not (transaction_date >= st.session_state.current_start_date and 
+                                   transaction_date <= st.session_state.current_end_date):
+                                filtered_transactions.append(t)
+                        except (ValueError, TypeError) as e:
+                            # Se houver erro ao converter a data, manter a transação
+                            filtered_transactions.append(t)
+                            print(f"Erro ao processar data da transação: {t}, erro: {str(e)}")
+                    
+                    # Atualizar as transações
+                    st.session_state.transactions = filtered_transactions
                     # Salvar transações atualizadas
                     save_user_transactions(st.session_state.username, st.session_state.transactions)
                 
