@@ -165,6 +165,14 @@ def navigate_back():
                 del st.session_state.purchase_justification
             if "purchase_date" in st.session_state:
                 del st.session_state.purchase_date
+        # Reset delivery form state if coming from delivery form
+        elif st.session_state.category == ExpenseCategory.DELIVERY.value:
+            if "delivery_collaborator" in st.session_state:
+                del st.session_state.delivery_collaborator
+            if "delivery_amount" in st.session_state:
+                del st.session_state.delivery_amount
+            if "delivery_date" in st.session_state:
+                del st.session_state.delivery_date
         st.session_state.page = "categories"
     elif st.session_state.page == "categories":
         st.session_state.page = "main"
@@ -542,7 +550,94 @@ def show_form():
                     st.session_state.page = "main"
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
-    
+
+    elif st.session_state.category == ExpenseCategory.DELIVERY.value:
+        # Initialize session state for delivery form
+        if "delivery_collaborator" not in st.session_state:
+            st.session_state.delivery_collaborator = ""
+        if "delivery_amount" not in st.session_state:
+            st.session_state.delivery_amount = 0.0
+        if "delivery_date" not in st.session_state:
+            st.session_state.delivery_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.delivery_date,
+            key="delivery_date_input"
+        )
+        if selected_date != st.session_state.delivery_date:
+            st.session_state.delivery_date = selected_date
+            st.rerun()
+        
+        # Collaborator name field
+        new_collaborator = st.text_input(
+            "Nome do Colaborador",
+            value=st.session_state.delivery_collaborator,
+            key="delivery_collaborator_input"
+        )
+        if new_collaborator != st.session_state.delivery_collaborator:
+            st.session_state.delivery_collaborator = new_collaborator
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.delivery_amount,
+            key="delivery_amount_input"
+        )
+        if new_amount != st.session_state.delivery_amount:
+            st.session_state.delivery_amount = new_amount
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_delivery"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.delivery_collaborator.strip():
+                    validation_error = "Por favor, insira o nome do colaborador"
+                elif st.session_state.delivery_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"Entregue a {st.session_state.delivery_collaborator}"
+                    save_transaction(
+                        st.session_state.delivery_date,
+                        TransactionType.EXPENSE.value,
+                        ExpenseCategory.DELIVERY.value,
+                        description,
+                        st.session_state.delivery_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.delivery_collaborator
+                    del st.session_state.delivery_amount
+                    del st.session_state.delivery_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
     else:
         with st.form("transaction_form", clear_on_submit=True):
             st.markdown('<div class="form-container">', unsafe_allow_html=True)
