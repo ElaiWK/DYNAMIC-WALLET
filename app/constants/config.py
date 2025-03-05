@@ -9,7 +9,7 @@ class TransactionType(Enum):
 class ExpenseCategory(Enum):
     MEAL = "Refeição"
     HR = "Recursos Humanos"
-    OTHER = "Outro"
+    OTHER = "Compra"
 
 # Income Categories
 class IncomeCategory(Enum):
