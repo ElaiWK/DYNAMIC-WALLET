@@ -952,7 +952,7 @@ def main():
                             "Descrição",
                             help="Descrição da transação",
                             width="medium",
-                            max_chars=50  # This will force text to wrap
+                            wrap=True  # Enable text wrapping
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
@@ -984,7 +984,7 @@ def main():
                             "Descrição",
                             help="Descrição da transação",
                             width="medium",
-                            max_chars=50  # This will force text to wrap
+                            wrap=True  # Enable text wrapping
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
