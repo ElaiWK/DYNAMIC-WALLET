@@ -4,7 +4,8 @@ import pandas as pd
 from datetime import datetime
 
 # Define path to user data folder
-USER_DATA_DIR = 'data/users'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+USER_DATA_DIR = os.path.join(BASE_DIR, 'data', 'users')
 
 def ensure_user_directory(username):
     """Ensure the user's data directory exists."""

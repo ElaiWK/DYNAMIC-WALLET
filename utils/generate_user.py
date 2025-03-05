@@ -3,6 +3,9 @@ import yaml
 from yaml.loader import SafeLoader
 import os
 
+# Get the absolute path to the base directory
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def generate_password_hash(password):
     """Generate a password hash using bcrypt."""
     return stauth.Hasher([password]).generate()[0]
@@ -10,7 +13,7 @@ def generate_password_hash(password):
 def add_user_to_config(username, name, email, password):
     """Add a new user to the config.yaml file."""
     # Load existing config
-    config_path = 'data/config.yaml'
+    config_path = os.path.join(BASE_DIR, 'data', 'config.yaml')
     if os.path.exists(config_path):
         with open(config_path, 'r') as file:
             config = yaml.load(file, Loader=SafeLoader)
@@ -57,7 +60,7 @@ if __name__ == "__main__":
     add_user_to_config(username, name, email, password)
     
     # Create user directory
-    user_dir = os.path.join('data', 'users', username)
+    user_dir = os.path.join(BASE_DIR, 'data', 'users', username)
     if not os.path.exists(user_dir):
         os.makedirs(user_dir)
         print(f"Created user directory: {user_dir}") 

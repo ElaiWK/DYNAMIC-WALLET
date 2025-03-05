@@ -43,7 +43,11 @@ st.set_page_config(
 
 def load_config():
     """Load authentication configuration from file."""
-    with open('data/config.yaml') as file:
+    # Get the absolute path to the config file
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config_path = os.path.join(base_dir, 'data', 'config.yaml')
+    
+    with open(config_path) as file:
         config = yaml.load(file, Loader=SafeLoader)
     return config
 
