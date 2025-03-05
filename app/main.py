@@ -207,7 +207,7 @@ def show_login_page():
     # st.write("Debug - Current session state keys:", list(st.session_state.keys()))
     
     # Adicionar título "DYNAMIC WALLET"
-    st.markdown("<h1 style='text-align: center; color: #FF0000;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
     
     # Centralizar o formulário de login
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -1432,6 +1432,7 @@ def main():
     # Debug: Show loaded data
     st.sidebar.write("Debug - Transactions:", len(st.session_state.transactions))
     st.sidebar.write("Debug - History:", len(st.session_state.history))
+    st.sidebar.write("Debug - Current page:", st.session_state.page)
     
     # Auto-save user data periodically
     auto_save_user_data()
@@ -1445,20 +1446,26 @@ def main():
         with tab4:
             show_admin_tab()
     else:
-        tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
-        
-        # Debug tab information
-        st.sidebar.write("Debug - Tab IDs:", tab1.id, tab2.id, tab3.id)
-        
-        # Show content directly in each tab
-        with tab1:
-            show_main_page()
-        
-        with tab2:
-            show_report_tab()
-        
-        with tab3:
-            show_history_tab()
+        # Verificar a página atual e mostrar o conteúdo apropriado
+        if st.session_state.page == "categories":
+            show_categories()
+        elif st.session_state.page == "form":
+            show_form()
+        else:  # página principal ou qualquer outra
+            tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
+            
+            # Debug tab information
+            st.sidebar.write("Debug - Tab IDs:", tab1.id, tab2.id, tab3.id)
+            
+            # Show content directly in each tab
+            with tab1:
+                show_main_page()
+            
+            with tab2:
+                show_report_tab()
+            
+            with tab3:
+                show_history_tab()
 
 def show_admin_tab():
     """Show the admin dashboard"""
