@@ -1005,20 +1005,21 @@ def main():
             # Create a more visible summary section with line-by-line format
             st.markdown("""
             <div style="margin: 20px 0;">
-                <div style="margin-bottom: 10px;">
-                    <span style="font-size: 16px; color: white;">Resumo:</span>
+                <div style="margin-bottom: 15px;">
+                    <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
                 </div>
-                <div style="margin-bottom: 8px;">
-                    <span style="font-size: 14px; color: white;">Total Entradas: </span>
-                    <span style="font-size: 14px; color: #4CAF50;">{}</span>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Total Entradas: </span>
+                    <span style="font-size: 16px; color: #4CAF50; font-weight: 500;">{}</span>
                 </div>
-                <div style="margin-bottom: 8px;">
-                    <span style="font-size: 14px; color: white;">Total Saídas: </span>
-                    <span style="font-size: 14px; color: #ff4b4b;">{}</span>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Total Saídas: </span>
+                    <span style="font-size: 16px; color: #ff4b4b; font-weight: 500;">{}</span>
                 </div>
-                <div style="margin-bottom: 8px;">
-                    <span style="font-size: 14px; color: white;">Saldo: </span>
-                    <span style="font-size: 14px; color: {};">{} ({})</span>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 16px; color: white;">Saldo: </span>
+                    <span style="font-size: 16px; color: {}; font-weight: 500;">{}</span>
+                    <span style="font-size: 16px; color: white;"> ({})</span>
                 </div>
             </div>
             """.format(
