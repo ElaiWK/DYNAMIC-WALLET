@@ -907,17 +907,19 @@ def main():
                 )
             
             # Apply filters
+            filtered_df = df.copy()
             if type_filter != "Todos":
-                df = df[df["Type"] == type_filter]
+                filtered_df = filtered_df[filtered_df["Type"] == type_filter]
             if category_filter != "Todas":
-                df = df[df["Category"] == category_filter]
+                filtered_df = filtered_df[filtered_df["Category"] == category_filter]
             
-            # Format the amount column with currency
-            df["Amount"] = df["Amount"].apply(format_currency)
+            # Format the amount column with currency for display
+            filtered_df_display = filtered_df.copy()
+            filtered_df_display["Amount"] = filtered_df_display["Amount"].apply(format_currency)
             
             # Display the transactions in a table
             st.dataframe(
-                df,
+                filtered_df_display,
                 column_config={
                     "Date": "Data",
                     "Type": "Tipo",
@@ -928,18 +930,22 @@ def main():
                 hide_index=True
             )
             
+            # Calculate summary statistics
+            total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
+            total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
+            net_amount = total_income - total_expense
+            
             # Show summary statistics
             st.write("")
             st.write("Resumo:")
-            summary = get_period_summary(create_transaction_df(st.session_state.transactions))
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Entradas", format_currency(summary['total_income']))
+                st.metric("Total Entradas", format_currency(total_income))
             with col2:
-                st.metric("Total Saídas", format_currency(summary['total_expense']))
+                st.metric("Total Saídas", format_currency(total_expense))
             with col3:
-                st.metric("Saldo", format_currency(summary['net_amount']))
+                st.metric("Saldo", format_currency(net_amount))
         else:
             st.info("Não existem transações registradas.")
 
