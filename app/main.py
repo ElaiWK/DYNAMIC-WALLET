@@ -18,6 +18,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+import traceback
 
 from constants.config import (
     TransactionType,
@@ -1450,63 +1451,38 @@ def main():
     
     # Create tabs - add Admin tab if user is admin
     if st.session_state.get("is_admin", False):
-        tab1, tab2, tab3, tab4 = st.tabs(["Registar", "Relatório", "Histórico", "Colaboradores"])
+        # Admin só vê o separador "Colaboradores"
+        tab4 = st.tabs(["Colaboradores"])[0]
+        
+        # Mostrar apenas a aba de colaboradores
+        show_admin_tab()
     else:
         tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
+        
+        # Handle tab switching
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = "Registar"
+        
+        # Only update active tab when explicitly switching tabs
+        if tab2.id and tab2.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Relatório"
+        elif tab1.id and tab1.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Registar"
+        elif tab3.id and tab3.id != st.session_state.active_tab:
+            st.session_state.active_tab = "Histórico"
+        
+        # Show the appropriate tab content
+        if st.session_state.active_tab == "Registar":
+            with tab1:
+                show_main_page()
+        elif st.session_state.active_tab == "Relatório":
+            with tab2:
+                show_report_tab()
+        elif st.session_state.active_tab == "Histórico":
+            with tab3:
+                show_history_tab()
     
-    # Handle tab switching
-    if "active_tab" not in st.session_state:
-        st.session_state.active_tab = "Registar"
-    
-    # Only update active tab when explicitly switching tabs
-    if tab2.id and tab2.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Relatório"
-    elif tab1.id and tab1.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Registar"
-    elif tab3.id and tab3.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Histórico"
-    elif st.session_state.get("is_admin", False) and tab4.id and tab4.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Colaboradores"
-    
-    with tab1:
-        if st.session_state.page == "main":
-            show_main_page()
-        elif st.session_state.page == "categories":
-            show_categories()
-        elif st.session_state.page == "form":
-            show_form()
-    
-    with tab2:
-        show_report_tab()
-    
-    with tab3:
-        show_history_tab()
-    
-    # Show admin tab if user is admin
-    if st.session_state.get("is_admin", False):
-        with tab4:
-            show_admin_tab()
-    
-    # Add Dynamic Wallet icon in top right
-    st.markdown("""
-        <style>
-        .dynamic-wallet-icon {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            font-size: 24px;
-            width: 40px;
-            height: 40px;
-            line-height: 40px;
-            text-align: center;
-            background-color: #4CAF50;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        </style>
-        <div class="dynamic-wallet-icon" onclick="window.location.href='.'">💰</div>
-    """, unsafe_allow_html=True)
+    # If user is admin, show admin tab
 
 def show_admin_tab():
     """Show the admin dashboard"""
@@ -1944,62 +1920,60 @@ def show_report_tab():
         
         # Generate report button
         if st.button("Gerar Relatório"):
-            # Create a unique report number based on the current date
-            report_number = f"Relatório {st.session_state.report_counter}"
-            st.session_state.report_counter += 1
-            
-            # Calculate summary statistics
-            summary = get_period_summary(df)
-            
-            # Create a report object
-            report = {
-                "number": report_number,
-                "period": f"{start_date_str} a {end_date_str}",
-                "transactions": df.to_dict("records"),
-                "summary": summary,
-                'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
-                'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
-            }
-            
-            # Add to history
-            if "history" not in st.session_state:
-                st.session_state.history = []
-            st.session_state.history.append(report)
-            
-            # Save history to file
-            save_user_history(st.session_state.username, st.session_state.history)
-            
-            # Auto-save all user data
-            auto_save_user_data()
-            
-            # Update to next week's dates
-            next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
-            st.session_state.current_start_date = next_start
-            st.session_state.current_end_date = next_end
+            # Verificar se a data final é igual ou anterior à data atual
+            today = datetime.now().date()
+            if end_date > today:
+                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({end_date.strftime(DATE_FORMAT)}) deve ser igual ou anterior à data atual ({today.strftime(DATE_FORMAT)}).")
+            else:
+                # Create a unique report number based on the current date
+                report_number = f"Relatório {st.session_state.report_counter}"
+                st.session_state.report_counter += 1
+                
+                # Calculate summary statistics
+                summary = get_period_summary(df)
+                
+                # Create a report object
+                report = {
+                    "number": report_number,
+                    "period": f"{start_date_str} a {end_date_str}",
+                    "transactions": df.to_dict("records"),
+                    "summary": summary,
+                    'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
+                    'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
+                }
+                
+                # Add to history
+                if "history" not in st.session_state:
+                    st.session_state.history = []
+                st.session_state.history.append(report)
+                
+                # Save history to file
+                save_user_history(st.session_state.username, st.session_state.history)
+                
+                # Auto-save all user data
+                auto_save_user_data()
+                
+                # Update to next week's dates
+                next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
+                st.session_state.current_start_date = next_start
+                st.session_state.current_end_date = next_end
+                
+                # Mostrar mensagem de sucesso
+                st.success(f"Relatório {report_number} gerado com sucesso!")
 
 if __name__ == "__main__":
     try:
         # st.write("Debug - Running in directory:", os.getcwd())
         # st.write("Debug - Files in current directory:", os.listdir())
         
-        # Create data directory if it doesn't exist
-        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-        if not os.path.exists(data_dir):
-            try:
-                os.makedirs(data_dir, exist_ok=True)
-                # st.write(f"Debug - Created data directory: {data_dir}")
-            except Exception as e:
-                # st.write(f"Debug - Error creating data directory: {str(e)}")
-                pass
-        
-        # Initialize first_load flag if not present
-        if "first_load" not in st.session_state:
-            st.session_state.first_load = True
-            # Reset all session state on first load
-            # st.write("Debug - Reset session state on first load")
-            reset_state()
+        # Garantir que a senha do usuário Luis seja "1234"
+        users = load_users()
+        if "Luis" in users:
+            users["Luis"]["password"] = hash_password("1234")
+            save_users(users)
+            print("Senha do usuário Luis definida como '1234'")
         
         main()
     except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        st.exception(e) 
+        st.error(f"Erro na inicialização: {str(e)}")
+        st.write("Traceback:", traceback.format_exc()) 
