@@ -7,6 +7,7 @@ import os
 import sys
 from yaml.loader import SafeLoader
 import streamlit_authenticator as stauth
+import bcrypt
 
 # Fix imports by using absolute paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1129,7 +1130,7 @@ def main():
     print(f"Authentication status: {st.session_state.get('authentication_status')}")
     
     # If not authenticated, show login form
-    if st.session_state.authentication_status != True:
+    if st.session_state.get('authentication_status') != True:
         print("User not authenticated, showing login form")
         
         # Center the login form
@@ -1151,13 +1152,9 @@ def main():
                     if username in config['credentials']['usernames']:
                         user_data = config['credentials']['usernames'][username]
                         
-                        # Simple string comparison for testing
-                        if username == "admin" and password == "admin123":
-                            st.session_state.authentication_status = True
-                            st.session_state.username = username
-                            st.session_state.name = user_data['name']
-                            st.rerun()
-                        elif username == "usuario1" and password == "user123":
+                        # Check password using bcrypt
+                        stored_password = user_data['password'].encode()
+                        if bcrypt.checkpw(password.encode(), stored_password):
                             st.session_state.authentication_status = True
                             st.session_state.username = username
                             st.session_state.name = user_data['name']
@@ -1176,7 +1173,7 @@ def main():
     else:
         print("User authenticated, showing app")
         # Load user data on first login
-        if not st.session_state.data_loaded:
+        if not st.session_state.get('data_loaded', False):
             load_user_data(st.session_state.username)
             st.session_state.data_loaded = True
         
@@ -1184,9 +1181,9 @@ def main():
         with st.sidebar:
             st.write(f"Bem-vindo, {st.session_state.name}")
             if st.button("Logout", key="logout_sidebar"):
-                st.session_state.authentication_status = None
-                st.session_state.username = None
-                st.session_state.name = None
+                # Clear all session state
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
                 st.rerun()
             
             # Add a save button to manually save data
