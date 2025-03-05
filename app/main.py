@@ -1079,8 +1079,15 @@ def main():
                 )
             
             with col2:
-                categories = ([cat.value for cat in ExpenseCategory] + 
-                            [cat.value for cat in IncomeCategory])
+                # Filter categories based on selected type
+                if type_filter == TransactionType.EXPENSE.value:
+                    categories = [cat.value for cat in ExpenseCategory]
+                elif type_filter == TransactionType.INCOME.value:
+                    categories = [cat.value for cat in IncomeCategory]
+                else:  # "Todos"
+                    categories = ([cat.value for cat in ExpenseCategory] + 
+                                [cat.value for cat in IncomeCategory])
+                
                 category_filter = st.selectbox(
                     "Categoria",
                     options=["Todas"] + categories,
