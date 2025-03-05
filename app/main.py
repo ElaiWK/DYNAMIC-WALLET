@@ -40,7 +40,7 @@ st.markdown("""
     }
 
     /* Main action buttons (Saídas/Entradas) */
-    div.element-container:has(button[kind="primary"]) button {
+    div.element-container:not(.back-container):not(.category-button) div.stButton > button:not([kind="secondary"]) {
         background-color: #4CAF50 !important;
         color: white !important;
         padding: 24px 48px !important;
@@ -49,30 +49,35 @@ st.markdown("""
         width: 100% !important;
         text-align: center !important;
         display: block !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
 
-    div.element-container:has(button[kind="primary"]) button:hover {
+    div.element-container:not(.back-container):not(.category-button) div.stButton > button:not([kind="secondary"]):hover {
         background-color: #45a049 !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
     /* Back button */
-    div.back-container button {
+    div.back-container div.stButton > button {
         color: #4a4a4a !important;
         font-size: 14px !important;
         text-decoration: underline !important;
         text-align: right !important;
         display: inline !important;
         width: auto !important;
+        padding: 0 !important;
+        background: none !important;
+        border: none !important;
     }
 
-    div.back-container button:hover {
+    div.back-container div.stButton > button:hover {
         color: #2b2b2b !important;
     }
 
     /* Category buttons */
-    div.category-button button {
+    div.category-button div.stButton > button {
         background-color: white !important;
         color: #333333 !important;
         border: 2px solid #e0e0e0 !important;
@@ -83,15 +88,17 @@ st.markdown("""
         text-align: center !important;
         display: block !important;
         margin: 8px 0 !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }
 
-    div.category-button button:hover {
+    div.category-button div.stButton > button:hover {
         border-color: #4CAF50 !important;
         transform: translateX(5px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
 
     /* Submit buttons */
-    div.meal-submit-button button {
+    div.meal-submit-button div.stButton > button {
         background-color: #ff4b4b !important;
         color: white !important;
         padding: 24px 48px !important;
@@ -100,12 +107,14 @@ st.markdown("""
         width: 100% !important;
         text-align: center !important;
         display: block !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
 
-    div.meal-submit-button button:hover {
+    div.meal-submit-button div.stButton > button:hover {
         background-color: #e64444 !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
     /* Balance container styling */
@@ -128,33 +137,6 @@ st.markdown("""
         font-size: 14px;
         color: #666;
         margin-top: 5px;
-    }
-    div.stButton.link-container {
-        text-align: right !important;
-        margin-bottom: 20px !important;
-    }
-    div.stButton.link-container > button {
-        width: auto !important;
-    }
-    /* Back button styling */
-    div.stButton > button[kind="secondary"] {
-        all: unset;
-        color: #4a4a4a !important;
-        font-size: 14px !important;
-        text-decoration: underline !important;
-        cursor: pointer !important;
-        background: none !important;
-        border: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        width: auto !important;
-        min-height: 0 !important;
-        line-height: normal !important;
-        box-shadow: none !important;
-        transform: none !important;
-    }
-    div.stButton > button[kind="secondary"]:hover {
-        color: #2b2b2b !important;
     }
 </style>
 """, unsafe_allow_html=True)
