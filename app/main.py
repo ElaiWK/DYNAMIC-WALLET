@@ -78,6 +78,10 @@ st.markdown("""
     }
 
     /* Category buttons */
+    .category-button {
+        margin: 2px 0 !important;
+    }
+    
     .category-button .stButton > button {
         background-color: white !important;
         color: #333333 !important;
@@ -86,7 +90,7 @@ st.markdown("""
         font-weight: normal !important;
         box-shadow: none !important;
         padding: 10px 20px !important;
-        margin: 4px 0 !important;
+        margin: 0 !important;
         height: auto !important;
     }
 
