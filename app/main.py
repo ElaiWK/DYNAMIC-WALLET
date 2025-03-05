@@ -31,14 +31,14 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    .big-button {
+    div.stButton > button {
         background-color: #4CAF50;
         border: none;
         color: white;
         padding: 32px 64px;
         text-align: center;
         text-decoration: none;
-        display: inline-block;
+        display: block;
         font-size: 24px;
         margin: 4px 2px;
         cursor: pointer;
@@ -46,21 +46,21 @@ st.markdown("""
         width: 100%;
         transition: all 0.3s;
     }
-    .big-button:hover {
+    div.stButton > button:hover {
         background-color: #45a049;
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .expense-button {
+    .expense-button > button {
         background-color: #ff4b4b !important;
     }
-    .expense-button:hover {
+    .expense-button > button:hover {
         background-color: #e64444 !important;
     }
-    .income-button {
+    .income-button > button {
         background-color: #4CAF50 !important;
     }
-    .income-button:hover {
+    .income-button > button:hover {
         background-color: #45a049 !important;
     }
     .balance-container {
@@ -70,7 +70,7 @@ st.markdown("""
         margin-top: 30px;
         text-align: center;
     }
-    .category-button {
+    div.category-button > button {
         background-color: #ffffff;
         border: 2px solid #e0e0e0;
         color: #333333;
@@ -84,11 +84,11 @@ st.markdown("""
         border-radius: 8px;
         transition: all 0.3s;
     }
-    .category-button:hover {
+    div.category-button > button:hover {
         border-color: #4CAF50;
         transform: translateX(5px);
     }
-    .back-button {
+    div.back-button > button {
         background-color: #6c757d;
         color: white;
         padding: 8px 16px;
@@ -97,6 +97,7 @@ st.markdown("""
         font-size: 14px;
         margin-bottom: 20px;
         display: inline-block;
+        width: auto;
     }
     .form-container {
         background-color: white;
@@ -117,6 +118,24 @@ if "transaction_type" not in st.session_state:
 if "category" not in st.session_state:
     st.session_state.category = None
 
+def navigate_to_categories(transaction_type):
+    st.session_state.page = "categories"
+    st.session_state.transaction_type = transaction_type
+    st.rerun()
+
+def navigate_to_form(category):
+    st.session_state.category = category
+    st.session_state.page = "form"
+    st.rerun()
+
+def navigate_back():
+    if st.session_state.page == "form":
+        st.session_state.page = "categories"
+    elif st.session_state.page == "categories":
+        st.session_state.page = "main"
+        st.session_state.transaction_type = None
+    st.rerun()
+
 def show_main_page():
     st.title("💰 MD Wallet")
     
@@ -124,16 +143,12 @@ def show_main_page():
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.markdown('<button class="big-button expense-button">Pague</button>', unsafe_allow_html=True):
-            st.session_state.page = "categories"
-            st.session_state.transaction_type = TransactionType.EXPENSE.value
-            st.experimental_rerun()
+        if st.button("Pague", key="expense_button"):
+            navigate_to_categories(TransactionType.EXPENSE.value)
     
     with col2:
-        if st.markdown('<button class="big-button income-button">Recebi</button>', unsafe_allow_html=True):
-            st.session_state.page = "categories"
-            st.session_state.transaction_type = TransactionType.INCOME.value
-            st.experimental_rerun()
+        if st.button("Recebi", key="income_button"):
+            navigate_to_categories(TransactionType.INCOME.value)
     
     # Show balance at the bottom
     if st.session_state.transactions:
@@ -152,9 +167,8 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    if st.markdown('<a href="#" class="back-button">← Voltar</a>', unsafe_allow_html=True):
-        st.session_state.page = "main"
-        st.experimental_rerun()
+    if st.button("← Voltar", key="back_button"):
+        navigate_back()
     
     st.subheader("Selecione a Categoria")
     
@@ -164,17 +178,14 @@ def show_categories():
         else [cat.value for cat in IncomeCategory]
     )
     
-    for category in categories:
-        if st.markdown(f'<button class="category-button">{category}</button>', unsafe_allow_html=True):
-            st.session_state.category = category
-            st.session_state.page = "form"
-            st.experimental_rerun()
+    for idx, category in enumerate(categories):
+        if st.button(category, key=f"category_{idx}"):
+            navigate_to_form(category)
 
 def show_form():
     # Back button
-    if st.markdown('<a href="#" class="back-button">← Voltar para Categorias</a>', unsafe_allow_html=True):
-        st.session_state.page = "categories"
-        st.experimental_rerun()
+    if st.button("← Voltar para Categorias", key="back_to_categories"):
+        navigate_back()
     
     st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
     
@@ -232,7 +243,7 @@ def show_form():
             save_transaction(date, st.session_state.transaction_type, st.session_state.category, description, amount)
             st.success("Transação registrada com sucesso!")
             st.session_state.page = "main"
-            st.experimental_rerun()
+            st.rerun()
 
 def save_transaction(date, type_, category, description, amount):
     transaction = {
