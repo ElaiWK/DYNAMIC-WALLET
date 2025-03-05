@@ -937,29 +937,6 @@ def main():
                 st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     income_df.drop("Type", axis=1),  # Remove Type column
-                    column_config={
-                        "Date": st.column_config.TextColumn(
-                            "Data",
-                            width="small",
-                            help="Data da transação"
-                        ),
-                        "Category": st.column_config.TextColumn(
-                            "Categoria",
-                            width="small",
-                            help="Categoria da transação"
-                        ),
-                        "Description": st.column_config.TextColumn(
-                            "Descrição",
-                            help="Descrição da transação",
-                            width="medium",
-                            wrap=True  # Enable text wrapping
-                        ),
-                        "Amount": st.column_config.TextColumn(
-                            "Valor",
-                            width="small",
-                            help="Valor da transação"
-                        )
-                    },
                     hide_index=True,
                     use_container_width=True
                 )
@@ -969,29 +946,6 @@ def main():
                 st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     expense_df.drop("Type", axis=1),  # Remove Type column
-                    column_config={
-                        "Date": st.column_config.TextColumn(
-                            "Data",
-                            width="small",
-                            help="Data da transação"
-                        ),
-                        "Category": st.column_config.TextColumn(
-                            "Categoria",
-                            width="small",
-                            help="Categoria da transação"
-                        ),
-                        "Description": st.column_config.TextColumn(
-                            "Descrição",
-                            help="Descrição da transação",
-                            width="medium",
-                            wrap=True  # Enable text wrapping
-                        ),
-                        "Amount": st.column_config.TextColumn(
-                            "Valor",
-                            width="small",
-                            help="Valor da transação"
-                        )
-                    },
                     hide_index=True,
                     use_container_width=True
                 )
