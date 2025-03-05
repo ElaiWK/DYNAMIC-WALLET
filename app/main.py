@@ -36,11 +36,11 @@ st.markdown("""
         background-color: #4CAF50;
         border: none;
         color: white;
-        padding: 32px 64px;
+        padding: 24px 48px;
         text-align: center;
         text-decoration: none;
         display: block;
-        font-size: 24px;
+        font-size: 20px;
         margin: 4px 2px;
         cursor: pointer;
         border-radius: 12px;
@@ -71,11 +71,24 @@ st.markdown("""
         background-color: #e64444 !important;
     }
     .balance-container {
-        padding: 20px;
+        padding: 15px;
         border-radius: 10px;
         background-color: #f8f9fa;
-        margin-top: 30px;
+        margin-top: 20px;
         text-align: center;
+    }
+    .balance-container h1 {
+        font-size: 28px;
+        margin: 0;
+    }
+    .balance-container h2 {
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+    .balance-container p {
+        font-size: 14px;
+        color: #666;
+        margin-top: 5px;
     }
     div.category-button > button {
         background-color: #ffffff;
@@ -222,10 +235,10 @@ def show_main_page():
         status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
         
         st.markdown("""
-        <div class="balance-container" style="padding: 10px; margin-top: 20px;">
-            <h2 style="margin-bottom: 5px;">Saldo Total</h2>
-            <h1 style="color: {}; margin: 0;">{}</h1>
-            <p style="color: #666; margin-top: 5px; font-size: 16px;">{}</p>
+        <div class="balance-container">
+            <h2>Saldo Total</h2>
+            <h1 style="color: {};">{}</h1>
+            <p>{}</p>
         </div>
         """.format(
             '#ff4b4b' if summary['net_amount'] < 0 else '#4CAF50',
