@@ -147,6 +147,14 @@ def navigate_back():
                 del st.session_state.collaborator_names
             if "meal_date" in st.session_state:
                 del st.session_state.meal_date
+        # Reset HR form state if coming from HR expense form
+        elif st.session_state.category == ExpenseCategory.HR.value:
+            if "hr_hours" in st.session_state:
+                del st.session_state.hr_hours
+            if "hr_role" in st.session_state:
+                del st.session_state.hr_role
+            if "hr_date" in st.session_state:
+                del st.session_state.hr_date
         st.session_state.page = "categories"
     elif st.session_state.page == "categories":
         st.session_state.page = "main"
@@ -329,6 +337,106 @@ def show_form():
                         del st.session_state.meal_num_people
                         del st.session_state.collaborator_names
                         del st.session_state.meal_date
+                        st.session_state.page = "main"
+                        st.rerun()
+                    else:
+                        st.error(error)
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    elif st.session_state.category == ExpenseCategory.HR.value:
+        # Initialize session state for HR form
+        if "hr_hours" not in st.session_state:
+            st.session_state.hr_hours = 0.0
+        if "hr_role" not in st.session_state:
+            st.session_state.hr_role = list(HR_RATES.keys())[0]
+        if "hr_date" not in st.session_state:
+            st.session_state.hr_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.hr_date,
+            key="hr_date_input"
+        )
+        if selected_date != st.session_state.hr_date:
+            st.session_state.hr_date = selected_date
+            st.rerun()
+        
+        # Create two columns for the main inputs
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            new_hours = st.number_input(
+                "Horas Trabalhadas",
+                min_value=0.0,
+                step=0.5,
+                value=st.session_state.hr_hours,
+                key="hours_input"
+            )
+            if new_hours != st.session_state.hr_hours:
+                st.session_state.hr_hours = new_hours
+                st.rerun()
+        
+        with col2:
+            new_role = st.selectbox(
+                "Função",
+                list(HR_RATES.keys()),
+                index=list(HR_RATES.keys()).index(st.session_state.hr_role),
+                key="role_input"
+            )
+            if new_role != st.session_state.hr_role:
+                st.session_state.hr_role = new_role
+                st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Calculate and always display amount
+        calculated_amount = 0
+        if st.session_state.hr_hours > 0:
+            calculated_amount, _ = calculate_hr_expense(st.session_state.hr_hours, st.session_state.hr_role)
+        
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_hr"):
+                # Validate fields
+                validation_error = None
+                if st.session_state.hr_hours <= 0:
+                    validation_error = "Por favor, insira um número válido de horas trabalhadas"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    amount, error = calculate_hr_expense(
+                        st.session_state.hr_hours,
+                        st.session_state.hr_role
+                    )
+                    if not error:
+                        description = f"Despesa RH para {st.session_state.hr_role}"
+                        save_transaction(
+                            st.session_state.hr_date,
+                            TransactionType.EXPENSE.value,
+                            ExpenseCategory.HR.value,
+                            description,
+                            amount
+                        )
+                        st.success("Transação registrada com sucesso!")
+                        # Reset form state
+                        del st.session_state.hr_hours
+                        del st.session_state.hr_role
+                        del st.session_state.hr_date
                         st.session_state.page = "main"
                         st.rerun()
                     else:
