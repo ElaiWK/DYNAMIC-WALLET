@@ -1130,6 +1130,17 @@ def show_history_tab():
     
     st.table(df)
 
+def get_period_summary(df):
+    total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
+    total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
+    net_amount = total_income - total_expense
+    
+    return {
+        'total_income': total_income,
+        'total_expense': total_expense,
+        'net_amount': net_amount
+    }
+
 def show_report_tab():
     # Simple title for the report tab
     st.subheader("Relatório")
@@ -1185,11 +1196,11 @@ def show_report_tab():
         income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
         expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
         
-        # Store HTML for income transactions
-        income_html = ""
+        # Display income transactions
         if not income_df.empty:
+            st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
             for _, row in income_df.iterrows():
-                income_html += f"""
+                st.markdown(f"""
                 <div style="
                     background-color: #1E1E1E;
                     border-left: 4px solid #4CAF50;
@@ -1209,13 +1220,13 @@ def show_report_tab():
                         {row['Description']}
                     </div>
                 </div>
-                """
+                """, unsafe_allow_html=True)
         
-        # Store HTML for expense transactions
-        expense_html = ""
+        # Display expense transactions
         if not expense_df.empty:
+            st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
             for _, row in expense_df.iterrows():
-                expense_html += f"""
+                st.markdown(f"""
                 <div style="
                     background-color: #1E1E1E;
                     border-left: 4px solid #ff4b4b;
@@ -1235,26 +1246,14 @@ def show_report_tab():
                         {row['Description']}
                     </div>
                 </div>
-                """
-        
-        # Display income transactions
-        if not income_df.empty:
-            st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
-            st.markdown(income_html, unsafe_allow_html=True)
-        
-        # Display expense transactions
-        if not expense_df.empty:
-            st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
-            st.markdown(expense_html, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
         
         # Calculate summary statistics
         summary = get_period_summary(df)
         
         # Show summary statistics
         st.write("")
-        
-        # Create summary HTML
-        summary_html = f"""
+        st.markdown(f"""
         <div style="margin: 20px 0;">
             <div style="margin-bottom: 15px;">
                 <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
@@ -1273,10 +1272,7 @@ def show_report_tab():
                 <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if summary['net_amount'] >= 0 else 'A receber'})</span>
             </div>
         </div>
-        """
-        
-        # Display summary
-        st.markdown(summary_html, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
         
         # Add submit button
         st.write("")
@@ -1288,11 +1284,7 @@ def show_report_tab():
                 st.session_state.history.append({
                     'number': st.session_state.report_counter,
                     'transactions': st.session_state.transactions.copy(),
-                    'summary': {
-                        'total_income': summary['total_income'],
-                        'total_expense': summary['total_expense'],
-                        'net_amount': summary['net_amount']
-                    }
+                    'summary': summary
                 })
                 st.session_state.report_counter += 1
                 
