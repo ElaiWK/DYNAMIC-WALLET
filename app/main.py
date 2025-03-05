@@ -44,7 +44,7 @@ st.markdown("""
     }
 
     /* Main buttons (Saídas/Entradas) */
-    .stButton > button:not(.back-button):not(.category-button) {
+    .main-button .stButton > button {
         background-color: #4CAF50 !important;
         color: white !important;
         border: none !important;
@@ -53,7 +53,7 @@ st.markdown("""
         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
 
-    .stButton > button:not(.back-button):not(.category-button):hover {
+    .main-button .stButton > button:hover {
         background-color: #45a049 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
