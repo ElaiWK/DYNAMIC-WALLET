@@ -1017,12 +1017,10 @@ def main():
     tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
     with tab1:
-        # Reset to main page when Registar tab is selected
+        # Only reset to main page when switching from Relatório tab
         if "active_tab" not in st.session_state:
             st.session_state.active_tab = "Registar"
-        
-        # Check if tab changed to Registar
-        if st.session_state.active_tab != "Registar":
+        elif st.session_state.active_tab == "Relatório":
             st.session_state.page = "main"
             st.session_state.active_tab = "Registar"
         
