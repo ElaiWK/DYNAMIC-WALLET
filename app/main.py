@@ -129,6 +129,24 @@ st.markdown("""
         color: #666;
         margin-top: 5px;
     }
+
+    /* White underlined corner buttons */
+    .corner-button .stButton > button {
+        background: none !important;
+        border: none !important;
+        color: white !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+        width: auto !important;
+        text-decoration: underline !important;
+        text-align: right !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .corner-button .stButton > button:hover {
+        color: #cccccc !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
