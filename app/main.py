@@ -380,7 +380,6 @@ def show_main_page():
     # Initialize values
     abs_amount = 0
     status_text = ""
-    container_class = "negative"
     
     if st.session_state.transactions:
         df = create_transaction_df(st.session_state.transactions)
@@ -389,11 +388,10 @@ def show_main_page():
         # Calculate absolute value and determine status
         abs_amount = abs(summary['net_amount'])
         status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
-        container_class = 'balance' if summary['net_amount'] >= 0 else 'negative'
     
     st.markdown('<div class="amount-title">Saldo</div>', unsafe_allow_html=True)
     st.markdown(f"""
-    <div class="amount-container {container_class}">
+    <div class="amount-container">
         <div class="value">{format_currency(abs_amount)}</div>
         <div class="status">{status_text}</div>
     </div>
