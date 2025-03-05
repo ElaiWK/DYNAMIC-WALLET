@@ -185,6 +185,48 @@ st.markdown("""
         font-size: 24px !important;
         margin-bottom: 10px !important;
     }
+
+    /* Amount display styling */
+    .amount-title {
+        font-size: 16px !important;
+        color: white !important;
+        margin-bottom: 8px !important;
+        text-align: left !important;
+    }
+    
+    .amount-container {
+        background-color: #1e1e1e !important;
+        border: 1px solid rgba(250, 250, 250, 0.2) !important;
+        border-radius: 8px !important;
+        padding: 16px 32px !important;
+        margin: 4px 0 !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        height: auto !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .amount-container .value {
+        font-size: 24px !important;
+        color: white !important;
+        margin: 0 !important;
+    }
+
+    .amount-container .status {
+        font-size: 16px !important;
+        color: white !important;
+        margin: 0 !important;
+    }
+
+    /* Specific container states */
+    .amount-container.balance {
+        background-color: #4CAF50 !important;
+    }
+    .amount-container.negative {
+        background-color: #1e1e1e !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -298,10 +340,10 @@ def show_main_page():
         abs_amount = abs(summary['net_amount'])
         status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
         
-        st.markdown('<div class="balance-title">Saldo</div>', unsafe_allow_html=True)
+        st.markdown('<div class="amount-title">Saldo</div>', unsafe_allow_html=True)
         st.markdown(f"""
-        <div class="balance-container {'negative' if summary['net_amount'] < 0 else 'positive'}">
-            <div class="amount">{format_currency(abs_amount)}</div>
+        <div class="amount-container {'balance' if summary['net_amount'] >= 0 else 'negative'}">
+            <div class="value">{format_currency(abs_amount)}</div>
             <div class="status">{status_text}</div>
         </div>
         """, unsafe_allow_html=True)
@@ -417,11 +459,13 @@ def show_form():
                 meal_type
             )
         
-        st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+        if calculated_amount > 0:
+            st.markdown('<div class="amount-title">Valor por Pessoa</div>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="amount-container">
+                <div class="value">{format_currency(calculated_amount)}</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.write("")  # Add space before submit button
         
@@ -512,11 +556,13 @@ def show_form():
         
         # Calculate and display amount
         amount = HR_RATES[st.session_state.hr_role]
-        st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(amount)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+        if amount > 0:
+            st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="amount-container">
+                <div class="value">{format_currency(amount)}</div>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.write("")  # Add space before submit button
         
