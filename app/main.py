@@ -108,20 +108,25 @@ st.markdown("""
         border-color: #4CAF50;
         transform: translateX(5px);
     }
+    div.back-button {
+        text-align: right;
+        margin-bottom: 20px;
+    }
     div.back-button > button {
-        background-color: #6c757d;
-        color: white;
-        padding: 4px 12px;
-        border-radius: 4px;
-        text-decoration: none;
+        background-color: transparent !important;
+        color: #6c757d;
+        padding: 0;
+        text-decoration: underline;
         font-size: 12px;
-        margin-bottom: 10px;
-        display: inline-block;
+        border: none;
+        margin: 0;
+        display: inline;
         width: auto !important;
-        transition: all 0.2s;
+        transition: color 0.2s;
     }
     div.back-button > button:hover {
-        background-color: #5a6268;
+        background-color: transparent !important;
+        color: #5a6268;
         transform: none;
         box-shadow: none;
     }
