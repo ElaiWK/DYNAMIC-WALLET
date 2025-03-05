@@ -23,12 +23,11 @@ def is_late_submission(transaction_date):
     _, period_end = get_week_period(transaction_date)
     return current_date > period_end
 
-def calculate_meal_expense(amount_per_person, num_people):
+def calculate_meal_expense(total_amount, num_people, meal_type):
     """Calculate meal expense with validation."""
-    if amount_per_person > MAX_MEAL_ALLOWANCE_PER_PERSON:
-        return None, f"Amount per person cannot exceed €{MAX_MEAL_ALLOWANCE_PER_PERSON}"
-    total = amount_per_person * num_people
-    return total, None
+    max_allowed = num_people * MAX_MEAL_ALLOWANCE_PER_PERSON
+    actual_amount = min(total_amount, max_allowed)
+    return actual_amount, None
 
 def calculate_hr_expense(hours, role):
     """Calculate HR expense based on role and hours."""

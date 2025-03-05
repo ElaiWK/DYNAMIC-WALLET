@@ -17,6 +17,11 @@ class IncomeCategory(Enum):
     COLLABORATOR = "Recebi de um colaborador"
     OTHER = "Outro"
 
+# Meal Types
+class MealType(Enum):
+    LUNCH = "Almoço"
+    DINNER = "Jantar"
+
 # HR Rates (€/hour)
 HR_RATES = {
     "Senior Developer": 45,

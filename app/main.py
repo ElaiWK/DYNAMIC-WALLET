@@ -7,6 +7,7 @@ from constants.config import (
     TransactionType,
     ExpenseCategory,
     IncomeCategory,
+    MealType,
     HR_RATES,
     DATE_FORMAT,
     TRANSACTION_HEADERS
@@ -197,12 +198,13 @@ def show_form():
         error = None
         
         if st.session_state.category == ExpenseCategory.MEAL.value:
-            amount_per_person = st.number_input("Valor por Pessoa (€)", min_value=0.0, step=0.5)
-            num_people = st.number_input("Número de Pessoas", min_value=1, step=1)
-            description = st.text_input("Descrição")
+            total_amount = st.number_input("Valor da Fatura (€)", min_value=0.0, step=0.5)
+            num_people = st.number_input("Número de Colaboradores", min_value=1, step=1)
+            meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
+            description = f"{meal_type} com {num_people} colaboradores"
             
             if st.form_submit_button("Submeter"):
-                amount, error = calculate_meal_expense(amount_per_person, num_people)
+                amount, error = calculate_meal_expense(total_amount, num_people, meal_type)
                 
         elif st.session_state.category == ExpenseCategory.HR.value:
             role = st.selectbox("Função", list(HR_RATES.keys()))
