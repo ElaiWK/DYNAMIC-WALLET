@@ -1289,7 +1289,7 @@ def main():
     
     # Create tabs - add Admin tab if user is admin
     if st.session_state.get("is_admin", False):
-        tab1, tab2, tab3, tab4 = st.tabs(["Registar", "Relatório", "Histórico", "Admin"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Registar", "Relatório", "Histórico", "Colaboradores"])
     else:
         tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
     
@@ -1305,7 +1305,7 @@ def main():
     elif tab3.id and tab3.id != st.session_state.active_tab:
         st.session_state.active_tab = "Histórico"
     elif st.session_state.get("is_admin", False) and tab4.id and tab4.id != st.session_state.active_tab:
-        st.session_state.active_tab = "Admin"
+        st.session_state.active_tab = "Colaboradores"
     
     with tab1:
         if st.session_state.page == "main":
@@ -1349,7 +1349,7 @@ def main():
 
 def show_admin_tab():
     """Show the admin dashboard"""
-    st.subheader("Painel de Administrador")
+    st.subheader("Painel de Colaboradores")
     st.write("Visualizar dados de todos os utilizadores")
     
     # Get list of all users
@@ -1472,7 +1472,25 @@ def show_admin_tab():
             history = load_user_history(selected_user)
             if history:
                 for report in history:
-                    with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
+                    # Create a container for the expander and PDF button
+                    col1, col2 = st.columns([0.9, 0.1])
+                    
+                    with col1:
+                        expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
+                    
+                    with col2:
+                        # Add PDF download button
+                        st.markdown(f"""
+                        <div style="margin-top: 8px;">
+                            <a href="#" onclick="alert('Funcionalidade de download em PDF será implementada em breve!');" style="text-decoration: none;">
+                                <span style="font-size: 24px; color: white; background-color: #1E1E1E; padding: 5px 10px; border-radius: 4px;">
+                                    📄
+                                </span>
+                            </a>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with expander:
                         # Create DataFrame from transactions
                         df_report = create_transaction_df(report['transactions'])
                         
@@ -1574,7 +1592,25 @@ def show_history_tab():
 
     # Display detailed information for each report
     for report in st.session_state.history:
-        with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
+        # Create a container for the expander and PDF button
+        col1, col2 = st.columns([0.9, 0.1])
+        
+        with col1:
+            expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
+        
+        with col2:
+            # Add PDF download button
+            st.markdown(f"""
+            <div style="margin-top: 8px;">
+                <a href="#" onclick="alert('Funcionalidade de download em PDF será implementada em breve!');" style="text-decoration: none;">
+                    <span style="font-size: 24px; color: white; background-color: #1E1E1E; padding: 5px 10px; border-radius: 4px;">
+                        📄
+                    </span>
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with expander:
             # Create DataFrame from transactions
             df_transactions = create_transaction_df(report['transactions'])
             
