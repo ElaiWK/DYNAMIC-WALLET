@@ -198,6 +198,18 @@ def show_form():
             st.session_state.meal_num_people = 1
         if "collaborator_names" not in st.session_state:
             st.session_state.collaborator_names = [""]
+        if "meal_date" not in st.session_state:
+            st.session_state.meal_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.meal_date,
+            key="meal_date_input"
+        )
+        if selected_date != st.session_state.meal_date:
+            st.session_state.meal_date = selected_date
+            st.rerun()
         
         # Create two columns for the main inputs
         col1, col2 = st.columns(2)
@@ -233,7 +245,8 @@ def show_form():
         
         meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
         
-        # Show calculated amount immediately
+        # Calculate amount
+        calculated_amount = 0
         if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
             calculated_amount, _ = calculate_meal_expense(
                 st.session_state.meal_total_amount, 
@@ -242,13 +255,20 @@ def show_form():
             )
             st.markdown(f"""
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-                <h4>Valor a ser registrado:</h4>
                 <h3 style="color: #4CAF50;">{format_currency(calculated_amount)}</h3>
             </div>
             """, unsafe_allow_html=True)
         
-        # Dynamic collaborator name fields
-        st.subheader("Nomes dos Colaboradores")
+        # Show calculated amount per person
+        per_person_amount = min(st.session_state.meal_total_amount / st.session_state.meal_num_people, 12)
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+            <p style="margin: 0;">Valor por pessoa: <strong style="color: #4CAF50;">{format_currency(per_person_amount)}</strong></p>
+            <p style="margin: 0;">Valor total: <strong style="color: #4CAF50;">{format_currency(calculated_amount)}</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Collaborator name fields
         for i in range(st.session_state.meal_num_people):
             st.session_state.collaborator_names[i] = st.text_input(
                 f"Colaborador {i+1}", 
@@ -268,7 +288,7 @@ def show_form():
             )
             if not error:
                 save_transaction(
-                    datetime.now().date(), 
+                    st.session_state.meal_date,
                     TransactionType.EXPENSE.value, 
                     ExpenseCategory.MEAL.value, 
                     description, 
