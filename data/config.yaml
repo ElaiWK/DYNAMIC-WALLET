@@ -1,17 +1,17 @@
 credentials:
   usernames:
     admin:
-      email: admin@exemplo.com
-      name: Administrador
-      password: $2b$12$vV4FQnZcqGsNQ9J4qr5n2eZ/nU0vwTUkNwV9Nm9D.vVnH5a4V/vkK  # password: admin123
+      email: admin@mdwallet.com
+      name: Administrator
+      password: $2b$12$7YXnG2yh5RZN3TBkTktBAe9RQcJHF0T7QQhpKz6FwCQ3ZBmJ0Wdqe  # Password: admin123
     usuario1:
-      email: usuario1@exemplo.com
-      name: Usuário 1
-      password: $2b$12$UlrcQ9l2GpwNr8z.5l.XZedC3ZM/Oq8UYzTg/gE/3jDnGIOgBfJeS  # password: senha123
+      email: user1@mdwallet.com
+      name: Usuario 1
+      password: $2b$12$PwQJ8iP/FSC7aCPh8iCF1.XuLGYbQQjzlXRF0eqXkQQHE5ZQhXpyG  # Password: user123
 cookie:
-  expiry_days: 30
-  key: md_wallet_some_signature_key
-  name: md_wallet_cookie
+  expiry_days: 365
+  key: dynamic_wallet_secure_key_2024
+  name: dynamic_wallet_auth
 preauthorized:
   emails:
     - admin@exemplo.com 
