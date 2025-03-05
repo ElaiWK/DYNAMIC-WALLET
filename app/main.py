@@ -198,16 +198,31 @@ def show_form():
         error = None
         
         if st.session_state.category == ExpenseCategory.MEAL.value:
+            # Initialize session state for collaborator names if not exists
+            if "collaborator_names" not in st.session_state:
+                st.session_state.collaborator_names = [""]
+            
             total_amount = st.number_input("Valor da Fatura (€)", min_value=0.0, step=0.5)
             num_people = st.number_input("Número de Colaboradores", min_value=1, step=1)
             meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
             
+            # Update collaborator names list based on number of people
+            if len(st.session_state.collaborator_names) != num_people:
+                if len(st.session_state.collaborator_names) < num_people:
+                    # Add new empty fields
+                    st.session_state.collaborator_names.extend([""] * (num_people - len(st.session_state.collaborator_names)))
+                else:
+                    # Remove extra fields
+                    st.session_state.collaborator_names = st.session_state.collaborator_names[:num_people]
+            
             # Dynamic collaborator name fields
             st.subheader("Nomes dos Colaboradores")
-            collaborator_names = []
             for i in range(num_people):
-                name = st.text_input(f"Colaborador {i+1}", key=f"collaborator_{i}")
-                collaborator_names.append(name)
+                st.session_state.collaborator_names[i] = st.text_input(
+                    f"Colaborador {i+1}", 
+                    value=st.session_state.collaborator_names[i],
+                    key=f"collaborator_{i}"
+                )
             
             # Calculate and show the actual amount that will be used
             calculated_amount, _ = calculate_meal_expense(total_amount, num_people, meal_type)
@@ -215,14 +230,11 @@ def show_form():
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
                 <h4>Valor a ser registrado:</h4>
                 <h3 style="color: #4CAF50;">{format_currency(calculated_amount)}</h3>
-                <p style="color: #666; font-size: 0.9em;">
-                    {'Valor total da fatura' if calculated_amount == total_amount else f'Valor limitado a {num_people} × €12'}
-                </p>
             </div>
             """, unsafe_allow_html=True)
             
             # Create description with collaborator names
-            names_str = ", ".join(collaborator_names) if all(collaborator_names) else f"{num_people} colaboradores"
+            names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{num_people} colaboradores"
             description = f"{meal_type} com {names_str}"
             
             if st.form_submit_button("Submeter"):
