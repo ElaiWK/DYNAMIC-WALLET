@@ -1084,27 +1084,51 @@ def show_history_tab():
     if not st.session_state.history:
         st.info("Não existem relatórios guardados.")
         return
+
+    # Create a list to store the flattened data
+    table_data = []
     
     for report in st.session_state.history:
-        st.markdown(f"""
-        <div style="margin: 20px 0; padding: 20px; background-color: #1E1E1E; border-radius: 8px;">
-            <h3 style="color: white; margin-bottom: 20px;">Relatório #{report['number']}</h3>
-            
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: #4CAF50; font-size: 18px;">Entradas</h4>
-                {report['income_html']}
-            </div>
-            
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: #ff4b4b; font-size: 18px;">Saídas</h4>
-                {report['expense_html']}
-            </div>
-            
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                {report['summary_html']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # Add row to table data using the stored summary
+        table_data.append({
+            'Relatório #': report['number'],
+            'Total Entradas': report['summary']['total_income'],
+            'Total Saídas': report['summary']['total_expense'],
+            'Saldo': abs(report['summary']['net_amount']),
+            'Status': 'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'
+        })
+    
+    # Create DataFrame
+    df = pd.DataFrame(table_data)
+    
+    # Format currency columns
+    df['Total Entradas'] = df['Total Entradas'].apply(format_currency)
+    df['Total Saídas'] = df['Total Saídas'].apply(format_currency)
+    df['Saldo'] = df['Saldo'].apply(format_currency)
+    
+    # Display the table with custom styling
+    st.markdown("""
+    <style>
+    .dataframe {
+        font-size: 14px !important;
+        background-color: #1E1E1E !important;
+        color: white !important;
+    }
+    .dataframe th {
+        background-color: #2E2E2E !important;
+        color: white !important;
+        font-weight: bold !important;
+        padding: 12px !important;
+    }
+    .dataframe td {
+        background-color: #1E1E1E !important;
+        color: white !important;
+        padding: 10px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    st.table(df)
 
 def show_report_tab():
     # Simple title for the report tab
@@ -1224,9 +1248,7 @@ def show_report_tab():
             st.markdown(expense_html, unsafe_allow_html=True)
         
         # Calculate summary statistics
-        total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
-        total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
-        net_amount = total_income - total_expense
+        summary = get_period_summary(df)
         
         # Show summary statistics
         st.write("")
@@ -1239,16 +1261,16 @@ def show_report_tab():
             </div>
             <div style="margin-bottom: 12px;">
                 <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(total_income)}</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary['total_income'])}</span>
             </div>
             <div style="margin-bottom: 12px;">
                 <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(total_expense)}</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary['total_expense'])}</span>
             </div>
             <div style="margin-bottom: 12px;">
                 <span style="font-size: 16px; color: white;">Saldo: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(net_amount))}</span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if net_amount >= 0 else 'A receber'})</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(summary['net_amount']))}</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if summary['net_amount'] >= 0 else 'A receber'})</span>
             </div>
         </div>
         """
@@ -1262,12 +1284,15 @@ def show_report_tab():
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
             if st.button("Submeter Relatório", key="submit_report"):
-                # Save current report to history
+                # Save current report to history with actual data
                 st.session_state.history.append({
                     'number': st.session_state.report_counter,
-                    'income_html': income_html,
-                    'expense_html': expense_html,
-                    'summary_html': summary_html
+                    'transactions': st.session_state.transactions.copy(),
+                    'summary': {
+                        'total_income': summary['total_income'],
+                        'total_expense': summary['total_expense'],
+                        'net_amount': summary['net_amount']
+                    }
                 })
                 st.session_state.report_counter += 1
                 
