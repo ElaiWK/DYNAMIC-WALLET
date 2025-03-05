@@ -154,14 +154,14 @@ def show_main_page():
     # Center the title without icon
     st.markdown(f"""
         <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
-        <div style="text-align: right; font-size: 14px; color: #888888; margin-bottom: 40px;">
+        <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
             {format_date_range(st.session_state.current_start_date, st.session_state.current_end_date)}
         </div>
         <style>
         .amount-title {{
             color: #FFFFFF;
             text-align: center;
-            font-size: 20px;
+            font-size: 16px;
             margin-bottom: 10px;
         }}
         .amount-container {{
@@ -350,7 +350,7 @@ def show_form():
                 meal_type
             )
         
-        st.markdown('<div class="amount-title">Valor por Pessoa</div>', unsafe_allow_html=True)
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
         st.markdown(f"""
         <div class="amount-container">
             <div class="value">{format_currency(calculated_amount)}</div>
