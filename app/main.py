@@ -932,6 +932,18 @@ def main():
             income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
             expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
             
+            # Clean up descriptions by removing redundant valor information
+            def clean_description(row):
+                desc = row["Description"]
+                amount = row["Amount"]
+                # Remove the valor part if it matches the final amount
+                if f"Valor: {amount}" in desc:
+                    desc = desc.replace(f" (Valor: {amount})", "")
+                return desc
+            
+            income_df["Description"] = income_df.apply(clean_description, axis=1)
+            expense_df["Description"] = expense_df.apply(clean_description, axis=1)
+            
             # Display income transactions if they exist
             if not income_df.empty:
                 st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
@@ -942,14 +954,18 @@ def main():
                         'padding': '0.3rem',
                         'line-height': '1.2',
                         'max-width': 'none',
-                        'min-width': '100%'
+                        'min-width': '100%',
+                        'height': '60px',
+                        'max-height': '60px',
+                        'overflow-y': 'auto'
                     }),
                     hide_index=True,
                     use_container_width=True,
+                    height=400,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width="small",
+                            width="4rem",
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
@@ -980,14 +996,18 @@ def main():
                         'padding': '0.3rem',
                         'line-height': '1.2',
                         'max-width': 'none',
-                        'min-width': '100%'
+                        'min-width': '100%',
+                        'height': '60px',
+                        'max-height': '60px',
+                        'overflow-y': 'auto'
                     }),
                     hide_index=True,
                     use_container_width=True,
+                    height=400,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width="small",
+                            width="4rem",
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
