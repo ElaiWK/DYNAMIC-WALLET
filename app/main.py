@@ -35,6 +35,14 @@ st.set_page_config(
     layout="wide"
 )
 
+# CRITICAL: Always reset authentication state when the script loads
+# This is essential for both local and cloud deployments
+st.session_state.authenticated = False
+st.session_state.username = None
+st.session_state.user_data_loaded = False
+if "_cached_credentials" in st.session_state:
+    del st.session_state["_cached_credentials"]
+
 # User authentication functions
 def get_users_file_path():
     """Get the path to the users.json file"""
@@ -114,30 +122,14 @@ def authenticate(username, password):
     return verify_password(users[username]["password"], password)
 
 def show_login_page():
-    """Show the login page"""
     st.title("MD Wallet - Login")
     
-    # Initialize session state for login
-    if "login_tab" not in st.session_state:
-        st.session_state.login_tab = "login"
+    # Always reset the login tab to ensure login page shows properly
+    st.session_state.login_tab = "login"
     
-    # Check for cached credentials
-    if "cached_credentials" not in st.session_state:
-        # Try to load from session cookie if available
-        cached_creds = st.session_state.get("_cached_credentials", None)
-        if cached_creds:
-            try:
-                # Validate the credentials
-                decoded = base64.b64decode(cached_creds.encode())
-                username, token = pickle.loads(decoded)
-                users = load_users()
-                if username in users and users[username].get("session_token") == token:
-                    st.session_state.authenticated = True
-                    st.session_state.username = username
-                    st.session_state.is_admin = users[username].get("is_admin", False)
-                    return  # Skip showing login page
-            except:
-                pass  # If there's any error, proceed to login page
+    # Clear any potentially corrupted cached credentials
+    if "_cached_credentials" in st.session_state:
+        del st.session_state["_cached_credentials"]
     
     # Create tabs for login and signup
     login_tab, signup_tab = st.tabs(["Login", "Signup"])
@@ -151,9 +143,14 @@ def show_login_page():
                 submit = st.form_submit_button("Login")
                 
                 if submit:
+                    st.write(f"Attempting login for user: {username}")
                     if authenticate(username, password):
+                        st.write("Authentication successful!")
+                        # Set authenticated state
                         st.session_state.authenticated = True
                         st.session_state.username = username
+                        
+                        # Get user info
                         users = load_users()
                         st.session_state.is_admin = users[username].get("is_admin", False)
                         
@@ -163,7 +160,6 @@ def show_login_page():
                             session_token = str(uuid.uuid4())
                             
                             # Store the token with the user
-                            users = load_users()
                             users[username]["session_token"] = session_token
                             save_users(users)
                             
@@ -172,7 +168,14 @@ def show_login_page():
                             encoded = base64.b64encode(pickle.dumps(credentials)).decode()
                             st.session_state["_cached_credentials"] = encoded
                         
+                        # Initialize user session data
+                        st.session_state.page = "main"
+                        st.session_state.transactions = load_user_transactions(username) or []
+                        st.session_state.history = load_user_history(username) or []
+                        st.session_state.user_data_loaded = True
+                        
                         st.success("Login successful!")
+                        st.write("Session state:", st.session_state)
                         st.rerun()
                     else:
                         st.error("Invalid username or password")
@@ -1177,11 +1180,23 @@ def load_user_history(username):
     return []
 
 def main():
+    # Debug: Show current authentication state
+    st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
+    st.sidebar.write("Debug - Username:", st.session_state.get("username", "None"))
+    
     # Check if user is authenticated
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
     
     if not st.session_state.authenticated:
+        st.sidebar.warning("Not authenticated - showing login page")
+        show_login_page()
+        return
+    
+    # Make sure username is set
+    if "username" not in st.session_state or not st.session_state.username:
+        st.error("Session error: Username not set. Please log in again.")
+        st.session_state.authenticated = False
         show_login_page()
         return
     
@@ -1191,8 +1206,9 @@ def main():
     # Add logout button
     if st.sidebar.button("Logout"):
         # Save user data before logging out
-        save_user_transactions(st.session_state.username, st.session_state.transactions)
-        save_user_history(st.session_state.username, st.session_state.history)
+        if hasattr(st.session_state, "transactions") and hasattr(st.session_state, "history"):
+            save_user_transactions(st.session_state.username, st.session_state.transactions)
+            save_user_history(st.session_state.username, st.session_state.history)
         
         # Clear session state
         st.session_state.authenticated = False
@@ -1201,10 +1217,14 @@ def main():
             del st.session_state["_cached_credentials"]
         st.rerun()
     
+    # Initialize page state if not already done
+    if "page" not in st.session_state:
+        st.session_state.page = "main"
+    
     # Load user data if not already loaded
     if "user_data_loaded" not in st.session_state or not st.session_state.user_data_loaded:
-        st.session_state.transactions = load_user_transactions(st.session_state.username)
-        st.session_state.history = load_user_history(st.session_state.username)
+        st.session_state.transactions = load_user_transactions(st.session_state.username) or []
+        st.session_state.history = load_user_history(st.session_state.username) or []
         st.session_state.user_data_loaded = True
     
     # Create tabs - add Admin tab if user is admin
@@ -1587,4 +1607,12 @@ def show_report_tab():
         st.info("Não existem transações registradas.")
 
 if __name__ == "__main__":
+    # Always force the login page to show on initial load
+    # This is critical for both local and cloud deployments
+    if "page_load_complete" not in st.session_state:
+        st.session_state.authenticated = False
+        st.session_state.username = None
+        st.session_state.user_data_loaded = False
+        st.session_state.page_load_complete = True
+    
     main() 
