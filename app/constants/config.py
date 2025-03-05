@@ -8,15 +8,11 @@ class TransactionType(Enum):
 # Expense Categories
 class ExpenseCategory(Enum):
     MEAL = "Refeição"
-    HR = "Recursos Humanos"
-    OTHER = "Compra"
     DELIVERY = "Entreguei"
 
 # Income Categories
 class IncomeCategory(Enum):
     SERVICE = "Serviço"
-    HR = "Recursos Humanos"
-    PURCHASE = "Compra"
     DELIVERY = "Recebi"
 
 # Meal Types
