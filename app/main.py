@@ -85,6 +85,9 @@ st.markdown("""
         font-size: 18px !important;
         font-weight: normal !important;
         box-shadow: none !important;
+        padding: 10px 20px !important;
+        margin: 4px 0 !important;
+        height: auto !important;
     }
 
     .category-button .stButton > button:hover {
