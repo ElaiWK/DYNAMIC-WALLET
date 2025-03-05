@@ -1002,25 +1002,23 @@ def main():
             # Show summary statistics
             st.write("")
             
-            # Create a more compact summary section with custom styling
+            # Create a more visible summary section with line-by-line format
             st.markdown("""
-            <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-size: 13px; color: #666;">Resumo:</span>
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 16px; color: white;">Resumo:</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; gap: 20px;">
-                    <div>
-                        <span style="font-size: 13px; color: #666;">Total Entradas:</span>
-                        <span style="font-size: 13px; color: #4CAF50; margin-left: 5px;">{}</span>
-                    </div>
-                    <div>
-                        <span style="font-size: 13px; color: #666;">Total Saídas:</span>
-                        <span style="font-size: 13px; color: #ff4b4b; margin-left: 5px;">{}</span>
-                    </div>
-                    <div>
-                        <span style="font-size: 13px; color: #666;">Saldo:</span>
-                        <span style="font-size: 13px; color: {}; margin-left: 5px;">{} ({})</span>
-                    </div>
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 14px; color: white;">Total Entradas: </span>
+                    <span style="font-size: 14px; color: #4CAF50;">{}</span>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 14px; color: white;">Total Saídas: </span>
+                    <span style="font-size: 14px; color: #ff4b4b;">{}</span>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <span style="font-size: 14px; color: white;">Saldo: </span>
+                    <span style="font-size: 14px; color: {};">{} ({})</span>
                 </div>
             </div>
             """.format(
