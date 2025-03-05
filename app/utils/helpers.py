@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import pandas as pd
-from app.constants.config import (
+from constants.config import (
     MAX_MEAL_ALLOWANCE_PER_PERSON,
     HR_RATES,
     DATE_FORMAT

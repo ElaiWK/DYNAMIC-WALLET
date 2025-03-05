@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 
-from app.constants.config import (
+from constants.config import (
     TransactionType,
     ExpenseCategory,
     IncomeCategory,
@@ -11,7 +11,7 @@ from app.constants.config import (
     DATE_FORMAT,
     TRANSACTION_HEADERS
 )
-from app.utils.helpers import (
+from utils.helpers import (
     get_week_period,
     is_late_submission,
     calculate_meal_expense,
