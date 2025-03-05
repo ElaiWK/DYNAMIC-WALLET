@@ -1194,8 +1194,67 @@ def save_user_transactions(username, transactions):
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
     
+    # Converter valores numpy.int64 para int padrão do Python
+    def convert_numpy_types(obj):
+        if isinstance(obj, dict):
+            return {k: convert_numpy_types(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_numpy_types(item) for item in obj]
+        elif isinstance(obj, np.int64):
+            return int(obj)
+        elif isinstance(obj, np.float64):
+            return float(obj)
+        else:
+            return obj
+    
+    # Converter todos os valores numpy antes da serialização
+    transactions_converted = convert_numpy_types(transactions)
+    
     with open(transactions_file, "w") as f:
-        json.dump(transactions, f)
+        json.dump(transactions_converted, f)
+
+def save_user_dates(username, start_date, end_date, report_counter=1):
+    """Save user date range and report counter to a JSON file"""
+    if not username:
+        return
+    
+    user_dir = get_user_dir(username)
+    dates_file = os.path.join(user_dir, "dates.json")
+    
+    # Convert dates to string format
+    start_date_str = start_date.strftime('%Y-%m-%d') if hasattr(start_date, 'strftime') else start_date
+    end_date_str = end_date.strftime('%Y-%m-%d') if hasattr(end_date, 'strftime') else end_date
+    
+    dates_data = {
+        "start_date": start_date_str,
+        "end_date": end_date_str,
+        "report_counter": report_counter
+    }
+    
+    with open(dates_file, "w") as f:
+        json.dump(dates_data, f)
+
+def load_user_dates(username):
+    """Load user date range and report counter from a JSON file"""
+    if not username:
+        return None
+    
+    user_dir = get_user_dir(username)
+    dates_file = os.path.join(user_dir, "dates.json")
+    
+    dates_data = safe_load_json(dates_file, "corrupted_dates", None)
+    
+    if dates_data:
+        # Convert string dates back to datetime objects
+        try:
+            start_date = datetime.strptime(dates_data["start_date"], '%Y-%m-%d').date()
+            end_date = datetime.strptime(dates_data["end_date"], '%Y-%m-%d').date()
+            report_counter = dates_data.get("report_counter", 1)
+            return start_date, end_date, report_counter
+        except Exception as e:
+            print(f"Error converting dates: {str(e)}")
+    
+    return None
 
 def safe_load_json(file_path, backup_prefix, default_value=None):
     """Safely load JSON data from a file with error handling"""
@@ -1392,6 +1451,14 @@ def auto_save_user_data():
                 save_user_transactions(st.session_state.username, st.session_state.transactions)
             if hasattr(st.session_state, "history"):
                 save_user_history(st.session_state.username, st.session_state.history)
+            # Save current date range and report counter
+            if hasattr(st.session_state, "current_start_date") and hasattr(st.session_state, "current_end_date"):
+                save_user_dates(
+                    st.session_state.username, 
+                    st.session_state.current_start_date, 
+                    st.session_state.current_end_date,
+                    st.session_state.get("report_counter", 1)
+                )
         except Exception as e:
             print(f"Error in auto-save: {str(e)}")
 
@@ -1443,6 +1510,19 @@ def main():
     if "user_data_loaded" not in st.session_state or not st.session_state.user_data_loaded:
         st.session_state.transactions = load_user_transactions(st.session_state.username) or []
         st.session_state.history = load_user_history(st.session_state.username) or []
+        
+        # Load saved date range and report counter if available
+        dates_data = load_user_dates(st.session_state.username)
+        if dates_data:
+            st.session_state.current_start_date, st.session_state.current_end_date, st.session_state.report_counter = dates_data
+        elif "current_start_date" not in st.session_state:
+            # Initialize date range if not already set
+            start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
+            end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
+            st.session_state.current_start_date = start_date
+            st.session_state.current_end_date = end_date
+            st.session_state.report_counter = 1
+        
         st.session_state.user_data_loaded = True
     
     # Debug: Show loaded data
@@ -2008,13 +2088,21 @@ def show_report_tab():
                 # Save history to file
                 save_user_history(st.session_state.username, st.session_state.history)
                 
-                # Auto-save all user data
-                auto_save_user_data()
-                
                 # Update to next week's dates
                 next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
                 st.session_state.current_start_date = next_start
                 st.session_state.current_end_date = next_end
+                
+                # Save the updated dates
+                save_user_dates(
+                    st.session_state.username, 
+                    st.session_state.current_start_date, 
+                    st.session_state.current_end_date,
+                    st.session_state.report_counter
+                )
+                
+                # Auto-save all user data
+                auto_save_user_data()
                 
                 # Mostrar mensagem de sucesso
                 st.success("Relatório submetido com sucesso!")
