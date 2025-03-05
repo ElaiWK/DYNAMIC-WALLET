@@ -872,12 +872,76 @@ def save_transaction(date, type_, category, description, amount):
     st.session_state.transactions.append(transaction)
 
 def main():
-    if st.session_state.page == "main":
-        show_main_page()
-    elif st.session_state.page == "categories":
-        show_categories()
-    elif st.session_state.page == "form":
-        show_form()
+    # Create tabs
+    tab1, tab2 = st.tabs(["Registar", "Relatório"])
+    
+    with tab1:
+        if st.session_state.page == "main":
+            show_main_page()
+        elif st.session_state.page == "categories":
+            show_categories()
+        elif st.session_state.page == "form":
+            show_form()
+    
+    with tab2:
+        st.subheader("Relatório de Transações")
+        if st.session_state.transactions:
+            df = create_transaction_df(st.session_state.transactions)
+            
+            # Add filters
+            col1, col2 = st.columns(2)
+            with col1:
+                type_filter = st.selectbox(
+                    "Tipo",
+                    options=["Todos", TransactionType.EXPENSE.value, TransactionType.INCOME.value],
+                    key="type_filter"
+                )
+            
+            with col2:
+                categories = ([cat.value for cat in ExpenseCategory] + 
+                            [cat.value for cat in IncomeCategory])
+                category_filter = st.selectbox(
+                    "Categoria",
+                    options=["Todas"] + categories,
+                    key="category_filter"
+                )
+            
+            # Apply filters
+            if type_filter != "Todos":
+                df = df[df["Type"] == type_filter]
+            if category_filter != "Todas":
+                df = df[df["Category"] == category_filter]
+            
+            # Format the amount column with currency
+            df["Amount"] = df["Amount"].apply(format_currency)
+            
+            # Display the transactions in a table
+            st.dataframe(
+                df,
+                column_config={
+                    "Date": "Data",
+                    "Type": "Tipo",
+                    "Category": "Categoria",
+                    "Description": "Descrição",
+                    "Amount": "Valor"
+                },
+                hide_index=True
+            )
+            
+            # Show summary statistics
+            st.write("")
+            st.write("Resumo:")
+            summary = get_period_summary(create_transaction_df(st.session_state.transactions))
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Entradas", format_currency(summary['total_income']))
+            with col2:
+                st.metric("Total Saídas", format_currency(summary['total_expense']))
+            with col3:
+                st.metric("Saldo", format_currency(summary['net_amount']))
+        else:
+            st.info("Não existem transações registradas.")
 
 if __name__ == "__main__":
     main() 
