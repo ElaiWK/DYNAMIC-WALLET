@@ -206,11 +206,15 @@ def show_login_page():
     """Show the login page"""
     # st.write("Debug - Current session state keys:", list(st.session_state.keys()))
     
-    # Create tabs for login and signup
-    login_tab, signup_tab = st.tabs(["Login", "Signup"])
+    # Adicionar título "DYNAMIC WALLET"
+    st.markdown("<h1 style='text-align: center; color: #4CAF50;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
     
-    with login_tab:
+    # Centralizar o formulário de login
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
         # Login form
+        st.subheader("Login")
         with st.form("login_form"):
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
@@ -246,30 +250,6 @@ def show_login_page():
                     st.rerun()
                 else:
                     st.error("Invalid username or password. Please try again.")
-    
-    with signup_tab:
-        # Signup form
-        with st.form("signup_form"):
-            new_username = st.text_input("Choose a username")
-            new_password = st.text_input("Choose a password", type="password")
-            confirm_password = st.text_input("Confirm password", type="password")
-            submit_signup = st.form_submit_button("Create Account")
-            
-            if submit_signup:
-                if not new_username or not new_password:
-                    st.error("Username and password are required.")
-                elif new_password != confirm_password:
-                    st.error("Passwords do not match.")
-                else:
-                    users = load_users()
-                    if new_username in users:
-                        st.error("Username already exists. Please choose another one.")
-                    else:
-                        if create_user(new_username, new_password):
-                            st.success("Account created successfully! You can now log in.")
-                            st.session_state.login_tab = "login"
-                        else:
-                            st.error("Failed to create account. Please try again.")
 
 def get_week_dates(date):
     # Get Monday (start) of the week
