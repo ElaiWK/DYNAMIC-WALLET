@@ -390,9 +390,6 @@ def show_main_page():
     """, unsafe_allow_html=True)
 
 def show_categories():
-    # Add home button
-    show_home_button()
-    
     # Back button in categories
     st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar", key="back_button"):
@@ -414,9 +411,6 @@ def show_categories():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def show_form():
-    # Add home button
-    show_home_button()
-    
     # Back button in form
     st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories"):
@@ -1050,6 +1044,17 @@ def main():
     # Create tabs
     tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
+    # Handle tab switching - reset to main page when clicking Registar tab
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = "Registar"
+    
+    # Check if we switched to Registar tab
+    if tab1.id != st.session_state.active_tab and tab1.id:
+        st.session_state.page = "main"
+        st.session_state.active_tab = tab1.id
+    elif tab2.id != st.session_state.active_tab and tab2.id:
+        st.session_state.active_tab = tab2.id
+    
     with tab1:
         if st.session_state.page == "main":
             show_main_page()
@@ -1059,9 +1064,6 @@ def main():
             show_form()
     
     with tab2:
-        # Update active tab
-        st.session_state.active_tab = "Relatório"
-        
         # Simple title for the report tab
         st.subheader("Relatório")
         
