@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import plotly.express as px
 
 from constants.config import (
@@ -29,234 +29,23 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    /* Base button reset */
-    .stButton > button {
-        width: 100% !important;
-        border-radius: 8px !important;
-        transition: all 0.3s ease !important;
-        margin: 4px 0 !important;
-        height: auto !important;
-        white-space: normal !important;
-        padding: 16px 32px !important;
-    }
+def get_week_dates(date):
+    # Get Monday (start) of the week
+    monday = date - timedelta(days=date.weekday())
+    # Get Sunday (end) of the week
+    sunday = monday + timedelta(days=6)
+    return monday, sunday
 
-    /* Main buttons (Saídas/Entradas) */
-    .main-button .stButton > button {
-        background-color: #4CAF50 !important;
-        color: white !important;
-        border: none !important;
-        font-size: 20px !important;
-        font-weight: 500 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-    }
+def format_date_range(start_date, end_date):
+    return f"De {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
 
-    .main-button .stButton > button:hover {
-        background-color: #45a049 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-    }
+def get_next_week_dates(current_end_date):
+    next_monday = current_end_date + timedelta(days=1)
+    next_sunday = next_monday + timedelta(days=6)
+    return next_monday, next_sunday
 
-    /* Back button */
-    .back-container .stButton > button {
-        background: none !important;
-        border: none !important;
-        color: #666666 !important;
-        font-size: 14px !important;
-        padding: 0 !important;
-        width: auto !important;
-        text-decoration: underline !important;
-        text-align: left !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-    }
-
-    .back-container .stButton > button:hover {
-        color: #333333 !important;
-    }
-
-    /* Category buttons */
-    .category-button {
-        margin: 2px 0 !important;
-    }
-    
-    .category-button .stButton > button {
-        background-color: white !important;
-        color: #333333 !important;
-        border: 2px solid #e0e0e0 !important;
-        font-size: 18px !important;
-        font-weight: normal !important;
-        box-shadow: none !important;
-        padding: 10px 20px !important;
-        margin: 0 !important;
-        height: auto !important;
-    }
-
-    .category-button .stButton > button:hover {
-        border-color: #4CAF50 !important;
-        transform: translateX(5px) !important;
-    }
-
-    /* Submit buttons */
-    .meal-submit-button .stButton > button {
-        background-color: #ff4b4b !important;
-        color: white !important;
-        border: none !important;
-        font-size: 20px !important;
-        font-weight: 500 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-    }
-
-    .meal-submit-button .stButton > button:hover {
-        background-color: #e64444 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
-    }
-
-    /* Further refined balance container styling */
-    .balance-title {
-        font-size: 16px !important;
-        color: white !important;
-        margin-bottom: 8px !important;
-        text-align: left !important;
-    }
-    
-    .balance-container {
-        background-color: #1e1e1e !important;
-        border: 1px solid rgba(250, 250, 250, 0.2) !important;
-        border-radius: 8px !important;
-        padding: 16px 32px !important;
-        margin: 4px 0 !important;
-        text-align: center !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        height: auto !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .balance-container .amount {
-        font-size: 24px !important;
-        color: white !important;
-        margin: 0 !important;
-    }
-
-    .balance-container .status {
-        font-size: 16px !important;
-        color: white !important;
-        margin: 0 !important;
-    }
-
-    /* Adjust color based on amount */
-    .balance-container.negative {
-        background-color: #ff4b4b !important;
-    }
-    .balance-container.positive {
-        background-color: #4CAF50 !important;
-    }
-
-    /* White underlined corner buttons */
-    .corner-button .stButton > button {
-        background: none !important;
-        border: none !important;
-        color: white !important;
-        font-size: 14px !important;
-        padding: 0 !important;
-        width: auto !important;
-        text-decoration: underline !important;
-        text-align: right !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-    }
-
-    .corner-button .stButton > button:hover {
-        color: #cccccc !important;
-    }
-
-    /* Box styling to match button design */
-    .styled-box {
-        background-color: #f0f0f0 !important;
-        border: 2px solid #cccccc !important;
-        border-radius: 10px !important;
-        padding: 20px !important;
-        margin: 10px 0 !important;
-        text-align: center !important;
-        color: #333333 !important;
-        font-size: 18px !important;
-    }
-
-    .styled-box h1 {
-        color: #28a745 !important;
-        font-size: 24px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* Amount display styling */
-    .amount-title {
-        font-size: 16px !important;
-        color: white !important;
-        margin-bottom: 8px !important;
-        text-align: left !important;
-    }
-    
-    .amount-container {
-        background-color: #1e1e1e !important;
-        border: 1px solid rgba(250, 250, 250, 0.2) !important;
-        border-radius: 8px !important;
-        padding: 16px 32px !important;
-        margin: 4px 0 !important;
-        text-align: center !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        height: auto !important;
-        transition: all 0.3s ease !important;
-    }
-
-    .amount-container .value {
-        font-size: 24px !important;
-        color: white !important;
-        margin: 0 !important;
-    }
-
-    .amount-container .status {
-        font-size: 16px !important;
-        color: white !important;
-        margin: 0 !important;
-    }
-
-    /* Specific container states */
-    .amount-container.balance {
-        background-color: #4CAF50 !important;
-    }
-    .amount-container.negative {
-        background-color: #1e1e1e !important;
-    }
-
-    /* Corner button for home navigation */
-    .home-button .stButton > button {
-        background: none !important;
-        border: none !important;
-        color: #4CAF50 !important;
-        font-size: 14px !important;
-        padding: 0 !important;
-        width: auto !important;
-        text-decoration: underline !important;
-        text-align: right !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-        position: absolute !important;
-        top: 10px !important;
-        right: 10px !important;
-    }
-
-    .home-button .stButton > button:hover {
-        color: #45a049 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+def is_submission_late(end_date):
+    return datetime.now().date() > end_date
 
 # Initialize session state
 if "transactions" not in st.session_state:
@@ -271,6 +60,12 @@ if "history" not in st.session_state:
     st.session_state.history = []
 if "report_counter" not in st.session_state:
     st.session_state.report_counter = 1
+# Initialize date range
+if "current_start_date" not in st.session_state:
+    today = datetime.now().date()
+    start_date, end_date = get_week_dates(today)
+    st.session_state.current_start_date = start_date
+    st.session_state.current_end_date = end_date
 
 def reset_state():
     st.session_state.transactions = []
@@ -356,6 +151,21 @@ def show_home_button():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def show_main_page():
+    # Display date range
+    st.markdown(f"""
+        <h2 style="text-align: center; margin-bottom: 20px; color: white;">
+            {format_date_range(st.session_state.current_start_date, st.session_state.current_end_date)}
+        </h2>
+    """, unsafe_allow_html=True)
+    
+    # Check if submission is late
+    if is_submission_late(st.session_state.current_end_date):
+        st.markdown("""
+            <div style="text-align: center; color: #ff4b4b; font-size: 18px; margin-bottom: 20px; padding: 10px; border: 1px solid #ff4b4b; border-radius: 5px;">
+                ⚠️ Submissão de relatório em atraso!
+            </div>
+        """, unsafe_allow_html=True)
+    
     # Center the title without icon
     st.markdown("""
         <h1 style="text-align: center; margin-bottom: 40px;">DYNAMIC WALLET</h1>
@@ -436,12 +246,14 @@ def show_form():
         if "collaborator_names" not in st.session_state:
             st.session_state.collaborator_names = [""]
         if "meal_date" not in st.session_state:
-            st.session_state.meal_date = datetime.now().date()
+            st.session_state.meal_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.meal_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="meal_date_input"
         )
         if selected_date != st.session_state.meal_date:
@@ -565,12 +377,14 @@ def show_form():
         if "hr_collaborator" not in st.session_state:
             st.session_state.hr_collaborator = ""
         if "hr_date" not in st.session_state:
-            st.session_state.hr_date = datetime.now().date()
+            st.session_state.hr_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.hr_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="hr_date_input"
         )
         if selected_date != st.session_state.hr_date:
@@ -656,12 +470,14 @@ def show_form():
         if "purchase_justification" not in st.session_state:
             st.session_state.purchase_justification = ""
         if "purchase_date" not in st.session_state:
-            st.session_state.purchase_date = datetime.now().date()
+            st.session_state.purchase_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.purchase_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="purchase_date_input"
         )
         if selected_date != st.session_state.purchase_date:
@@ -757,12 +573,14 @@ def show_form():
         if "delivery_amount" not in st.session_state:
             st.session_state.delivery_amount = 0.0
         if "delivery_date" not in st.session_state:
-            st.session_state.delivery_date = datetime.now().date()
+            st.session_state.delivery_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.delivery_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="delivery_date_input"
         )
         if selected_date != st.session_state.delivery_date:
@@ -845,12 +663,14 @@ def show_form():
         if "service_amount" not in st.session_state:
             st.session_state.service_amount = 0.0
         if "service_date" not in st.session_state:
-            st.session_state.service_date = datetime.now().date()
+            st.session_state.service_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.service_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="service_date_input"
         )
         if selected_date != st.session_state.service_date:
@@ -933,12 +753,14 @@ def show_form():
         if "delivery_income_amount" not in st.session_state:
             st.session_state.delivery_income_amount = 0.0
         if "delivery_income_date" not in st.session_state:
-            st.session_state.delivery_income_date = datetime.now().date()
+            st.session_state.delivery_income_date = st.session_state.current_start_date
         
         # Date input at the top
         selected_date = st.date_input(
             "Data",
             value=st.session_state.delivery_income_date,
+            min_value=st.session_state.current_start_date,
+            max_value=st.session_state.current_end_date,
             key="delivery_income_date_input"
         )
         if selected_date != st.session_state.delivery_income_date:
@@ -1087,7 +909,7 @@ def show_history_tab():
 
     # Display detailed information for each report
     for report in st.session_state.history:
-        with st.expander(f"Relatório #{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
+        with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
             # Create DataFrame from transactions
             df_transactions = create_transaction_df(report['transactions'])
             
@@ -1246,7 +1068,7 @@ def show_report_tab():
         
         # Display income transactions
         if not income_df.empty:
-            st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='font-size: 18px; color: white;'>Entradas</h4>", unsafe_allow_html=True)
             for _, row in income_df.iterrows():
                 st.markdown(f"""
                 <div style="
@@ -1272,7 +1094,7 @@ def show_report_tab():
         
         # Display expense transactions
         if not expense_df.empty:
-            st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='font-size: 18px; color: white;'>Saídas</h4>", unsafe_allow_html=True)
             for _, row in expense_df.iterrows():
                 st.markdown(f"""
                 <div style="
@@ -1330,11 +1152,17 @@ def show_report_tab():
             if st.button("Submeter Relatório", key="submit_report"):
                 # Save current report to history with actual data
                 st.session_state.history.append({
-                    'number': st.session_state.report_counter,
+                    'number': format_date_range(st.session_state.current_start_date, st.session_state.current_end_date),
                     'transactions': st.session_state.transactions.copy(),
-                    'summary': summary
+                    'summary': summary,
+                    'start_date': st.session_state.current_start_date,
+                    'end_date': st.session_state.current_end_date
                 })
-                st.session_state.report_counter += 1
+                
+                # Update to next week's dates
+                next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
+                st.session_state.current_start_date = next_start
+                st.session_state.current_end_date = next_end
                 
                 # Reset state
                 reset_state()
