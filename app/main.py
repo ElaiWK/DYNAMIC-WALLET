@@ -1,15 +1,23 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
-import plotly.express as px
-import json
+import numpy as np
 import os
-import hashlib
-import pickle
-import base64
-import uuid
-import shutil
+import json
+import re
 import time
+import shutil
+import yaml
+import hashlib
+from datetime import datetime, timedelta
+import base64
+from io import BytesIO
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 
 from constants.config import (
     TransactionType,
@@ -1175,6 +1183,9 @@ def save_transaction(date, type_, category, description, amount):
     
     # Save transactions to file
     save_user_transactions(st.session_state.username, st.session_state.transactions)
+    
+    # Auto-save all user data
+    auto_save_user_data()
 
 # User data functions
 def get_user_data_dir():
@@ -1260,6 +1271,130 @@ def load_user_history(username):
     
     return safe_load_json(history_file, "corrupted_history")
 
+def save_user_history(username, history):
+    """Save user history to a JSON file"""
+    if not username:
+        return
+    
+    user_dir = get_user_dir(username)
+    history_file = os.path.join(user_dir, "history.json")
+    
+    with open(history_file, "w") as f:
+        json.dump(history, f)
+
+def generate_pdf_report(username, report_data):
+    """Generate a PDF report for a user's expense report"""
+    # Create a BytesIO object to store the PDF
+    buffer = BytesIO()
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    subtitle_style = styles['Heading2']
+    normal_style = styles['Normal']
+    
+    # Add title
+    elements.append(Paragraph(f"Relatório de Despesas - {report_data['number']}", title_style))
+    elements.append(Spacer(1, 12))
+    
+    # Add user info
+    elements.append(Paragraph(f"Colaborador: {username}", subtitle_style))
+    elements.append(Paragraph(f"Período: {report_data['period']}", normal_style))
+    elements.append(Spacer(1, 12))
+    
+    # Add summary
+    elements.append(Paragraph("Resumo", subtitle_style))
+    summary_data = [
+        ["Descrição", "Valor"],
+        ["Total Despesas", f"{format_currency(report_data['summary']['total_expenses'])}"],
+        ["Total Refeições", f"{format_currency(report_data['summary']['total_meals'])}"],
+        ["Total Transportes", f"{format_currency(report_data['summary']['total_transport'])}"],
+        ["Total Outros", f"{format_currency(report_data['summary']['total_other'])}"],
+        ["Saldo Final", f"{format_currency(report_data['summary']['net_amount'])}"]
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[300, 100])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+        ('BACKGROUND', (0, -1), (1, -1), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 24))
+    
+    # Add transactions
+    if report_data['transactions']:
+        elements.append(Paragraph("Detalhes das Transações", subtitle_style))
+        
+        # Create table data
+        transaction_data = [["Data", "Tipo", "Categoria", "Descrição", "Valor"]]
+        
+        for t in report_data['transactions']:
+            transaction_data.append([
+                t['Date'],
+                t['Type'],
+                t['Category'],
+                t['Description'],
+                format_currency(t['Amount'])
+            ])
+        
+        # Create the table
+        transaction_table = Table(transaction_data, colWidths=[80, 80, 100, 160, 80])
+        transaction_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
+        ]))
+        elements.append(transaction_table)
+    
+    # Build the PDF
+    doc.build(elements)
+    
+    # Get the PDF data
+    pdf_data = buffer.getvalue()
+    buffer.close()
+    
+    return pdf_data
+
+def get_pdf_download_link(pdf_data, filename):
+    """Generate a download link for a PDF file"""
+    b64 = base64.b64encode(pdf_data).decode()
+    href = f'''
+    <a href="data:application/pdf;base64,{b64}" download="{filename}.pdf" 
+       style="display: flex; align-items: center; justify-content: center; 
+              width: 32px; height: 32px; background-color: #4CAF50; 
+              border-radius: 4px; transition: all 0.3s; text-decoration: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="white"/>
+        </svg>
+    </a>
+    '''
+    return href
+
+def auto_save_user_data():
+    """Automatically save user data if authenticated"""
+    if st.session_state.get("authenticated", False) and st.session_state.get("username"):
+        try:
+            if hasattr(st.session_state, "transactions"):
+                save_user_transactions(st.session_state.username, st.session_state.transactions)
+            if hasattr(st.session_state, "history"):
+                save_user_history(st.session_state.username, st.session_state.history)
+        except Exception as e:
+            print(f"Error in auto-save: {str(e)}")
+
 def main():
     # Debug: Show current authentication state
     # st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
@@ -1309,6 +1444,9 @@ def main():
         st.session_state.transactions = load_user_transactions(st.session_state.username) or []
         st.session_state.history = load_user_history(st.session_state.username) or []
         st.session_state.user_data_loaded = True
+    
+    # Auto-save user data periodically
+    auto_save_user_data()
     
     # Create tabs - add Admin tab if user is admin
     if st.session_state.get("is_admin", False):
@@ -1504,17 +1642,14 @@ def show_admin_tab():
                     with col2:
                         # Add PDF download button with a more elegant design
                         report_id = f"{selected_user}_{report['number'].replace(' ', '_')}"
+                        
+                        # Generate PDF report
+                        pdf_data = generate_pdf_report(selected_user, report)
+                        download_link = get_pdf_download_link(pdf_data, f"Relatorio_{report_id}")
+                        
                         st.markdown(f"""
                         <div style="margin-top: 8px;">
-                            <button 
-                                onclick="alert('Relatório {report['number']} para {selected_user} será disponibilizado em breve.');" 
-                                style="background: none; border: none; cursor: pointer; padding: 0;">
-                                <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; transition: all 0.3s;">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="white"/>
-                                    </svg>
-                                </div>
-                            </button>
+                            {download_link}
                         </div>
                         """, unsafe_allow_html=True)
                     
@@ -1756,135 +1891,91 @@ def show_report_tab():
             )
         
         # Apply filters
-        filtered_df = df.copy()
         if type_filter != "Todos":
-            filtered_df = filtered_df[filtered_df["Type"] == type_filter]
+            df = df[df["Type"] == type_filter]
+        
         if category_filter != "Todas":
-            filtered_df = filtered_df[filtered_df["Category"] == category_filter]
+            df = df[df["Category"] == category_filter]
         
-        # Split dataframe by type
-        income_df = filtered_df[filtered_df["Type"] == TransactionType.INCOME.value].copy()
-        expense_df = filtered_df[filtered_df["Type"] == TransactionType.EXPENSE.value].copy()
-        
-        # Sort each dataframe by date
-        income_df = income_df.sort_values("Date", ascending=True)
-        expense_df = expense_df.sort_values("Date", ascending=True)
-        
-        # Format amounts for display
-        income_df["Amount"] = income_df["Amount"].apply(format_currency)
-        expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
-        
-        # Format dates to dd/MM
-        income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
-        expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
-        
-        # Display income transactions
-        if not income_df.empty:
-            st.markdown("<h4 style='font-size: 18px; color: white;'>Entradas</h4>", unsafe_allow_html=True)
-            for _, row in income_df.iterrows():
-                st.markdown(f"""
-                <div style="
-                    background-color: #1E1E1E;
-                    border-left: 4px solid #4CAF50;
-                    padding: 1rem;
-                    margin: 0.5rem 0;
-                    border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #CCCCCC;">{row['Date']}</span>
-                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                            {row['Category']}
-                        </span>
-                    </div>
-                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                        {row['Description']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Display expense transactions
-        if not expense_df.empty:
-            st.markdown("<h4 style='font-size: 18px; color: white;'>Saídas</h4>", unsafe_allow_html=True)
-            for _, row in expense_df.iterrows():
-                st.markdown(f"""
-                <div style="
-                    background-color: #1E1E1E;
-                    border-left: 4px solid #ff4b4b;
-                    padding: 1rem;
-                    margin: 0.5rem 0;
-                    border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #CCCCCC;">{row['Date']}</span>
-                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                            {row['Category']}
-                        </span>
-                    </div>
-                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                        {row['Description']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Calculate summary statistics
-        summary = get_period_summary(df)
-        
-        # Show summary statistics
+        # Date range selection
         st.write("")
-        st.markdown(f"""
-        <div style="margin: 20px 0;">
-            <div style="margin-bottom: 15px;">
-                <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary['total_income'])}</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary['total_expense'])}</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Saldo: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(summary['net_amount']))}</span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if summary['net_amount'] >= 0 else 'A receber'})</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write("Selecione o período:")
         
-        # Add submit button
-        st.write("")
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter Relatório", key="submit_report", use_container_width=True):
-                # Save current report to history with actual data
-                st.session_state.history.append({
-                    'number': format_date_range(st.session_state.current_start_date, st.session_state.current_end_date),
-                    'transactions': st.session_state.transactions.copy(),
-                    'summary': summary,
-                    'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
-                    'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
-                })
-                
-                # Save history to file
-                save_user_history(st.session_state.username, st.session_state.history)
-                
-                # Update to next week's dates
-                next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
-                st.session_state.current_start_date = next_start
-                st.session_state.current_end_date = next_end
-                
-                # Reset state
-                reset_state()
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.info("Não existem transações registradas.")
+        # Use columns for date inputs
+        date_col1, date_col2 = st.columns(2)
+        
+        with date_col1:
+            start_date = st.date_input(
+                "Data Inicial",
+                value=st.session_state.current_start_date,
+                key="start_date"
+            )
+        
+        with date_col2:
+            end_date = st.date_input(
+                "Data Final",
+                value=st.session_state.current_end_date,
+                key="end_date"
+            )
+        
+        # Convert dates to string format for filtering
+        start_date_str = start_date.strftime(DATE_FORMAT)
+        end_date_str = end_date.strftime(DATE_FORMAT)
+        
+        # Update session state with selected dates
+        st.session_state.current_start_date = start_date
+        st.session_state.current_end_date = end_date
+        
+        # Save current dates to user history
+        if "history" not in st.session_state:
+            st.session_state.history = []
+        
+        # Auto-save user data periodically
+        save_user_transactions(st.session_state.username, st.session_state.transactions)
+        save_user_history(st.session_state.username, st.session_state.history)
+        
+        # Filter by date range
+        df["Date"] = pd.to_datetime(df["Date"], format=DATE_FORMAT)
+        df = df[(df["Date"] >= pd.to_datetime(start_date_str, format=DATE_FORMAT)) & 
+                (df["Date"] <= pd.to_datetime(end_date_str, format=DATE_FORMAT))]
+        
+        # Convert back to string for display
+        df["Date"] = df["Date"].dt.strftime(DATE_FORMAT)
+        
+        # Generate report button
+        if st.button("Gerar Relatório"):
+            # Create a unique report number based on the current date
+            report_number = f"Relatório {st.session_state.report_counter}"
+            st.session_state.report_counter += 1
+            
+            # Calculate summary statistics
+            summary = get_period_summary(df)
+            
+            # Create a report object
+            report = {
+                "number": report_number,
+                "period": f"{start_date_str} a {end_date_str}",
+                "transactions": df.to_dict("records"),
+                "summary": summary,
+                'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
+                'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
+            }
+            
+            # Add to history
+            if "history" not in st.session_state:
+                st.session_state.history = []
+            st.session_state.history.append(report)
+            
+            # Save history to file
+            save_user_history(st.session_state.username, st.session_state.history)
+            
+            # Auto-save all user data
+            auto_save_user_data()
+            
+            # Update to next week's dates
+            next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
+            st.session_state.current_start_date = next_start
+            st.session_state.current_end_date = next_end
 
 if __name__ == "__main__":
     try:
