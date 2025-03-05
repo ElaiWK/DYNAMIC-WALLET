@@ -41,15 +41,41 @@ st.set_page_config(
     layout="wide"
 )
 
+# Apply custom CSS to fix the shaking issue
+st.markdown("""
+<style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    .stButton button {
+        width: 100%;
+    }
+    .login-container {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 def load_config():
     """Load authentication configuration from file."""
     # Get the absolute path to the config file
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     config_path = os.path.join(base_dir, 'data', 'config.yaml')
     
-    with open(config_path) as file:
-        config = yaml.load(file, Loader=SafeLoader)
-    return config
+    print(f"Loading config from: {config_path}")
+    print(f"File exists: {os.path.exists(config_path)}")
+    
+    try:
+        with open(config_path) as file:
+            config = yaml.load(file, Loader=SafeLoader)
+        print(f"Config loaded successfully: {config.keys()}")
+        return config
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        st.error(f"Error loading config: {e}")
+        return None
 
 # Initialize session state
 if "transactions" not in st.session_state:
@@ -1005,52 +1031,66 @@ def save_transaction(date, type_, category, description, amount):
 
 def main():
     # Load the authentication configuration
+    print("Starting main function")
     config = load_config()
     
-    # Create an authenticator object
+    # Create an authenticator object (for version 0.2.2)
     authenticator = stauth.Authenticate(
         config['credentials'],
         config['cookie']['name'],
         config['cookie']['key'],
-        config['cookie']['expiry_days'],
-        config['preauthorized']
+        config['cookie']['expiry_days']
     )
+    
+    print(f"Authentication status: {st.session_state.get('authentication_status')}")
     
     # If not authenticated, show login form
     if not st.session_state.authentication_status:
-        st.image("https://img.freepik.com/free-vector/gradient-perspective-logo-design_23-2149700161.jpg", width=150)
-        st.title("MD Wallet")
-        st.subheader("Login")
+        print("User not authenticated, showing login form")
         
-        # Display the login form
-        name, authentication_status, username = authenticator.login("Login", "main")
+        # Center the login form
+        col1, col2, col3 = st.columns([1, 2, 1])
         
-        # Store authentication status in session state
-        st.session_state.authentication_status = authentication_status
-        st.session_state.username = username
-        st.session_state.name = name
-        
-        # Handle authentication results
-        if st.session_state.authentication_status == False:
-            st.error("Usuário/senha incorretos")
-        elif st.session_state.authentication_status == None:
-            st.warning("Por favor, digite seu usuário e senha")
-            
-        # Show registration and password reset options
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Registrar Novo Usuário"):
-                # In a real app, you would implement user registration here
-                # For now, we'll show a message about contacting admin
-                st.info("Entre em contato com o administrador para criar uma nova conta.")
         with col2:
-            if st.button("Esqueci Minha Senha"):
-                # In a real app, you would implement password reset here
-                # For now, we'll show a message about contacting admin
-                st.info("Entre em contato com o administrador para redefinir sua senha.")
+            st.markdown('<div class="login-container">', unsafe_allow_html=True)
+            
+            # Logo and title
+            st.image("https://img.freepik.com/free-vector/gradient-perspective-logo-design_23-2149700161.jpg", width=150)
+            st.title("MD Wallet")
+            st.subheader("Login")
+            
+            # Display the login form
+            name, authentication_status, username = authenticator.login("Login", "main")
+            
+            # Store authentication status in session state
+            st.session_state.authentication_status = authentication_status
+            st.session_state.username = username
+            st.session_state.name = name
+            
+            # Handle authentication results
+            if st.session_state.authentication_status == False:
+                st.error("Usuário/senha incorretos")
+            elif st.session_state.authentication_status == None:
+                st.warning("Por favor, digite seu usuário e senha")
+                
+            # Show registration and password reset options
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Registrar Novo Usuário"):
+                    # In a real app, you would implement user registration here
+                    # For now, we'll show a message about contacting admin
+                    st.info("Entre em contato com o administrador para criar uma nova conta.")
+            with col2:
+                if st.button("Esqueci Minha Senha"):
+                    # In a real app, you would implement password reset here
+                    # For now, we'll show a message about contacting admin
+                    st.info("Entre em contato com o administrador para redefinir sua senha.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
                 
     # If authenticated, load user data and show the app
     elif st.session_state.authentication_status:
+        print("User authenticated, showing app")
         # Load user data on first login
         if not st.session_state.data_loaded:
             load_user_data(st.session_state.username)
