@@ -29,13 +29,20 @@ def calculate_meal_expense(total_amount, num_people, meal_type):
     actual_amount = min(total_amount, max_allowed)
     return actual_amount, None
 
-def calculate_hr_expense(hours, role):
-    """Calculate HR expense based on role and hours."""
+def calculate_hr_expense(role):
+    """
+    Calculate HR expense based on role's fixed rate.
+    
+    Args:
+        role (str): The role from HR_RATES
+        
+    Returns:
+        tuple: (amount, error_message)
+    """
     if role not in HR_RATES:
-        return None, "Invalid role selected"
-    rate = HR_RATES[role]
-    total = hours * rate
-    return total, None
+        return 0, "Função inválida"
+    
+    return HR_RATES[role], None
 
 def format_currency(amount):
     """Format amount as currency."""

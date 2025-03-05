@@ -24,11 +24,19 @@ class MealType(Enum):
 
 # HR Rates (€/hour)
 HR_RATES = {
-    "Senior Developer": 45,
-    "Mid Developer": 35,
-    "Junior Developer": 25,
-    "Project Manager": 50,
-    "Designer": 40
+    "Júnior": 35,
+    "Sénior": 40,
+    "Júnior mais de 10 horas": 40,
+    "Sénior mais de 10 horas": 50,
+    "Condutor": 55,
+    "Condutor 10 mais de 10 horas": 65,
+    "Monitor": 35,
+    "Operador": 40,
+    "Pinturas": 55,
+    "Pinturas e Kit": 65,
+    "Balões": 45,
+    "Balões e Kit": 55,
+    "Animador": 80
 }
 
 # Meal Limits
