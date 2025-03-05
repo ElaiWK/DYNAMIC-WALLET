@@ -44,7 +44,7 @@ st.set_page_config(
 def load_config():
     """Load authentication configuration from file."""
     with open('data/config.yaml') as file:
-        config = yaml.load(file, Loader=yaml.SafeLoader)
+        config = yaml.load(file, Loader=SafeLoader)
     return config
 
 # Initialize session state
@@ -73,6 +73,8 @@ if "username" not in st.session_state:
     st.session_state.username = None
 if "name" not in st.session_state:
     st.session_state.name = None
+if "data_loaded" not in st.session_state:
+    st.session_state.data_loaded = False
 
 def load_user_data(username):
     """Load a user's data from persistent storage."""
@@ -1046,7 +1048,7 @@ def main():
     # If authenticated, load user data and show the app
     elif st.session_state.authentication_status:
         # Load user data on first login
-        if "data_loaded" not in st.session_state or not st.session_state.data_loaded:
+        if not st.session_state.data_loaded:
             load_user_data(st.session_state.username)
             st.session_state.data_loaded = True
         
@@ -1054,6 +1056,11 @@ def main():
         with st.sidebar:
             st.write(f"Bem-vindo, {st.session_state.name}")
             authenticator.logout("Logout", "sidebar")
+            
+            # Add a save button to manually save data
+            if st.button("Salvar Dados"):
+                save_user_data(st.session_state.username)
+                st.success("Dados salvos com sucesso!")
         
         # Create tabs
         tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
@@ -1348,7 +1355,7 @@ def show_report_tab():
                 st.session_state.current_start_date = next_start
                 st.session_state.current_end_date = next_end
                 
-                # Save updated user data
+                # Save user data before resetting state
                 if st.session_state.authentication_status:
                     save_user_data(st.session_state.username)
                 
