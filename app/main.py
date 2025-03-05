@@ -1017,7 +1017,15 @@ def main():
     tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
     with tab1:
-        # Remove the automatic reset to main page when tab1 is selected
+        # Reset to main page when Registar tab is selected
+        if "active_tab" not in st.session_state:
+            st.session_state.active_tab = "Registar"
+        
+        # Check if tab changed to Registar
+        if st.session_state.active_tab != "Registar":
+            st.session_state.page = "main"
+            st.session_state.active_tab = "Registar"
+        
         if st.session_state.page == "main":
             show_main_page()
         elif st.session_state.page == "categories":
@@ -1026,6 +1034,9 @@ def main():
             show_form()
     
     with tab2:
+        # Update active tab
+        st.session_state.active_tab = "Relatório"
+        
         # Simple title for the report tab
         st.subheader("Relatório")
         
