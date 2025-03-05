@@ -32,86 +32,77 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    /* Reset all button styles first */
-    div.stButton > button {
-        all: unset !important;
-        cursor: pointer !important;
-        transition: all 0.3s !important;
+    /* Base button reset */
+    .stButton > button {
+        width: 100% !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
+        margin: 4px 0 !important;
+        height: auto !important;
+        white-space: normal !important;
+        padding: 16px 32px !important;
     }
 
-    /* Main action buttons (Saídas/Entradas) */
-    div.element-container:not(.back-container):not(.category-button) div.stButton > button:not([kind="secondary"]) {
+    /* Main buttons (Saídas/Entradas) */
+    .stButton > button:not(.back-button):not(.category-button) {
         background-color: #4CAF50 !important;
         color: white !important;
-        padding: 24px 48px !important;
-        font-size: 20px !important;
-        border-radius: 12px !important;
-        width: 100% !important;
-        text-align: center !important;
-        display: block !important;
         border: none !important;
+        font-size: 20px !important;
+        font-weight: 500 !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
 
-    div.element-container:not(.back-container):not(.category-button) div.stButton > button:not([kind="secondary"]):hover {
+    .stButton > button:not(.back-button):not(.category-button):hover {
         background-color: #45a049 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
 
     /* Back button */
-    div.back-container div.stButton > button {
-        color: #4a4a4a !important;
-        font-size: 14px !important;
-        text-decoration: underline !important;
-        text-align: right !important;
-        display: inline !important;
-        width: auto !important;
-        padding: 0 !important;
+    .back-container .stButton > button {
         background: none !important;
         border: none !important;
+        color: #666666 !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+        width: auto !important;
+        text-decoration: underline !important;
+        text-align: left !important;
+        margin: 0 !important;
+        box-shadow: none !important;
     }
 
-    div.back-container div.stButton > button:hover {
-        color: #2b2b2b !important;
+    .back-container .stButton > button:hover {
+        color: #333333 !important;
     }
 
     /* Category buttons */
-    div.category-button div.stButton > button {
+    .category-button .stButton > button {
         background-color: white !important;
         color: #333333 !important;
         border: 2px solid #e0e0e0 !important;
-        padding: 20px !important;
         font-size: 18px !important;
-        border-radius: 8px !important;
-        width: 100% !important;
-        text-align: center !important;
-        display: block !important;
-        margin: 8px 0 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+        font-weight: normal !important;
+        box-shadow: none !important;
     }
 
-    div.category-button div.stButton > button:hover {
+    .category-button .stButton > button:hover {
         border-color: #4CAF50 !important;
         transform: translateX(5px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
 
     /* Submit buttons */
-    div.meal-submit-button div.stButton > button {
+    .meal-submit-button .stButton > button {
         background-color: #ff4b4b !important;
         color: white !important;
-        padding: 24px 48px !important;
-        font-size: 20px !important;
-        border-radius: 12px !important;
-        width: 100% !important;
-        text-align: center !important;
-        display: block !important;
         border: none !important;
+        font-size: 20px !important;
+        font-weight: 500 !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
     }
 
-    div.meal-submit-button div.stButton > button:hover {
+    .meal-submit-button .stButton > button:hover {
         background-color: #e64444 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
