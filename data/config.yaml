@@ -8,6 +8,86 @@ credentials:
       email: user1@mdwallet.com
       name: Usuario 1
       password: $2b$12$mrWZdi0LGT5d/UCMPwsHMuO5V2IXuEYi1bBQkddJtT3prUiYOLQre  # Password: user123
+    Valeríya:
+      email: valeríya@mdwallet.com
+      name: Valeríya
+      password: $2b$12$rcjW3IXA8mevUTX6hen7pebw5mkh21jxIkrwHo/zCslW/XpW7Fen2  # Password: Bw7$pQzX9tLm
+    Luis:
+      email: luis@mdwallet.com
+      name: Luis
+      password: $2b$12$iw6kKxcAFYTM3aHl3HpS..XYcw5kutyGp/IH0XI2175CPm2BO8OMq  # Password: K3r@NvD8sYfE
+    Joao:
+      email: joao@mdwallet.com
+      name: Joao
+      password: $2b$12$6ZYttZ4TN.a1kv4SNk6ByuDA.Mequ3I9PEBxNZW6nfku4lc0hwwdu  # Password: P9j$Tz5LqWxH
+    Humberto:
+      email: humberto@mdwallet.com
+      name: Humberto
+      password: $2b$12$e7Yi9U4RHv8yWd3Zjvicu.3tKUg/KisOhP2Gh5/s4.Z.RsaaQXBGm  # Password: G4h&FmV7cRpZ
+    Goncalo:
+      email: goncalo@mdwallet.com
+      name: Goncalo
+      password: $2b$12$IzSOjKonRVI0WuNHkGWt.u4yHacA/197XD/0rvbWSJpxypK6lLm1e  # Password: X2s#Jb6QnDvA
+    Josue:
+      email: josue@mdwallet.com
+      name: Josue
+      password: $2b$12$nqXBMGLyhAuG/R./lYwisuF3vcmYYqMuG0vK3qFBPFQzZG2gT8LLi  # Password: M5t@Rz8PkLdS
+    Bruno:
+      email: bruno@mdwallet.com
+      name: Bruno
+      password: $2b$12$fyn1BkbPnQmnXZjPtzKGm.Z2fT92nxJ72IcC1M/NsfUs6qLIaSYbm  # Password: C7f$Qp3HjNxY
+    PauloP:
+      email: paulop@mdwallet.com
+      name: PauloP
+      password: $2b$12$C4qr9XBAdsMzhdmdleOq6.pVlDy2FyH2AKm20XzqSWks1x/Vwp/Ly  # Password: V9g&Zk4TmBwJ
+    PauloR:
+      email: paulor@mdwallet.com
+      name: PauloR
+      password: $2b$12$aL0G/jMkegAIzZfzi0kWEOizp3twUB7FxKCHBQgBrknDqYIawnkgW  # Password: L6h#Xd2RqFsP
+    Jose:
+      email: jose@mdwallet.com
+      name: Jose
+      password: $2b$12$g.7nfkpWOhCEENsYVDXPmu1vmzh/mc9OOi6wJBpO75zjaQkZIktSe  # Password: T8j$Mn5VcKpZ
+    Ricardo:
+      email: ricardo@mdwallet.com
+      name: Ricardo
+      password: $2b$12$Ez1niJRMzyesHJaRVnV9q.yh7hCGGEo36u4ttFDpAd5hvskZMdUh6  # Password: D3k@Qb7GxWfS
+    Antonio:
+      email: antonio@mdwallet.com
+      name: Antonio
+      password: $2b$12$5Aq8zGS8tgiAG9bbPmT6bOl3nsnE67iAUPy.BX6Lz94D/.IsKUW16  # Password: N4m&Vp9JzTcR
+    Sodia:
+      email: sodia@mdwallet.com
+      name: Sodia
+      password: $2b$12$yyaMUzfiy72P16dBNbxEX.gh6v/qFIxwifJp3LpbDbCbimSgjJP3y  # Password: F6s#Hd3LqBxZ
+    Timoteo:
+      email: timoteo@mdwallet.com
+      name: Timoteo
+      password: $2b$12$0cKyicur8qmqStpXJRr0LOBWq.ecJ/YqPjNlFiU98Gn5d3gEjnbCu  # Password: R9t$Kp5MnVjW
+    Armando:
+      email: armando@mdwallet.com
+      name: Armando
+      password: $2b$12$YMeEZGgRlZGLOxVjh9vMKuULcN.6ZrTz9kYlLbNndM3WE4XFn1UZO  # Password: H2v@Zf8QcPdG
+    Nelson:
+      email: nelson@mdwallet.com
+      name: Nelson
+      password: $2b$12$vESmrMRVaWTFezgfMtITJeYWYB0w/MLytESF7CH3vJoziZdoCJuFW  # Password: W7g&Jm4TzBsX
+    Tudor:
+      email: tudor@mdwallet.com
+      name: Tudor
+      password: $2b$12$AFGX2szGF3rC3KcjJwwUq.k34chgyP75AXCsrMQm3DATOeciNvz.6  # Password: S3k#Vb9NpRfD
+    Mika:
+      email: mika@mdwallet.com
+      name: Mika
+      password: $2b$12$DjnkO285HUF0UydbwhFHcO25bqBWmybQ3GONZopFhjiq.0ld90uxO  # Password: Y5m$Qz7HjLcT
+    Lucas:
+      email: lucas@mdwallet.com
+      name: Lucas
+      password: $2b$12$lDRbtSWF40H5sdjx5EadSu0Fj.P/1jC8ASvpkKZN6yn01JoINIrTq  # Password: B8p@Xd4GvWkS
+    Carla:
+      email: carla@mdwallet.com
+      name: Carla
+      password: $2b$12$YmuVhgZkBSBnY27rYwQcxubjnSyUV//a2kMM1utsHDJiwRFDo5edO  # Password: J6r&Zn2TmFqP
 cookie:
   expiry_days: 365
   key: dynamic_wallet_secure_key_2024
