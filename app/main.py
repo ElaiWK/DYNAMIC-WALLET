@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.express as px
+import json
+import os
+import hashlib
+import pickle
+import base64
+import uuid
 
 from constants.config import (
     TransactionType,
@@ -28,6 +34,170 @@ st.set_page_config(
     page_icon="💰",
     layout="wide"
 )
+
+# User authentication functions
+def get_users_file_path():
+    """Get the path to the users.json file"""
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    return os.path.join(data_dir, "users.json")
+
+def load_users():
+    """Load users from the JSON file"""
+    users_file = get_users_file_path()
+    if os.path.exists(users_file):
+        with open(users_file, "r") as f:
+            return json.load(f)
+    # If file doesn't exist, initialize with default users
+    return initialize_default_users()
+
+def initialize_default_users():
+    """Initialize the system with default users if none exist"""
+    default_users = {
+        "Valeriya": {"password": hash_password("Bw7$pQzX9tLm"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Luis": {"password": hash_password("K3r@NvD8sYfE"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Joao": {"password": hash_password("P9j$Tz5LqWxH"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Humberto": {"password": hash_password("G4h&FmV7cRpZ"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Goncalo": {"password": hash_password("X2s#Jb6QnDvA"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Josue": {"password": hash_password("M5t@Rz8PkLdS"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Bruno": {"password": hash_password("C7f$Qp3HjNxY"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "PauloP": {"password": hash_password("V9g&Zk4TmBwJ"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "PauloR": {"password": hash_password("L6h#Xd2RqFsP"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Jose": {"password": hash_password("T8j$Mn5VcKpZ"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Ricardo": {"password": hash_password("D3k@Qb7GxWfS"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Antonio": {"password": hash_password("N4m&Vp9JzTcR"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Sodia": {"password": hash_password("F6s#Hd3LqBxZ"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Timoteo": {"password": hash_password("R9t$Kp5MnVjW"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Armando": {"password": hash_password("H2v@Zf8QcPdG"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Nelson": {"password": hash_password("W7g&Jm4TzBsX"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Tudor": {"password": hash_password("S3k#Vb9NpRfD"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Mika": {"password": hash_password("Y5m$Qz7HjLcT"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Lucas": {"password": hash_password("B8p@Xd4GvWkS"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "Carla": {"password": hash_password("J6r&Zn2TmFqP"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
+        "admin": {"password": hash_password("admin123"), "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "is_admin": True}
+    }
+    save_users(default_users)
+    return default_users
+
+def save_users(users):
+    """Save users to the JSON file"""
+    users_file = get_users_file_path()
+    with open(users_file, "w") as f:
+        json.dump(users, f)
+
+def hash_password(password):
+    """Hash a password for storing"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def verify_password(stored_password, provided_password):
+    """Verify a stored password against a provided password"""
+    return stored_password == hash_password(provided_password)
+
+def create_user(username, password):
+    """Create a new user"""
+    users = load_users()
+    if username in users:
+        return False
+    users[username] = {
+        "password": hash_password(password),
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    save_users(users)
+    return True
+
+def authenticate(username, password):
+    """Authenticate a user"""
+    users = load_users()
+    if username not in users:
+        return False
+    return verify_password(users[username]["password"], password)
+
+def show_login_page():
+    """Show the login page"""
+    st.title("MD Wallet - Login")
+    
+    # Initialize session state for login
+    if "login_tab" not in st.session_state:
+        st.session_state.login_tab = "login"
+    
+    # Check for cached credentials
+    if "cached_credentials" not in st.session_state:
+        # Try to load from session cookie if available
+        cached_creds = st.session_state.get("_cached_credentials", None)
+        if cached_creds:
+            try:
+                # Validate the credentials
+                decoded = base64.b64decode(cached_creds.encode())
+                username, token = pickle.loads(decoded)
+                users = load_users()
+                if username in users and users[username].get("session_token") == token:
+                    st.session_state.authenticated = True
+                    st.session_state.username = username
+                    st.session_state.is_admin = users[username].get("is_admin", False)
+                    return  # Skip showing login page
+            except:
+                pass  # If there's any error, proceed to login page
+    
+    # Create tabs for login and signup
+    login_tab, signup_tab = st.tabs(["Login", "Signup"])
+    
+    with login_tab:
+        if st.session_state.login_tab == "login":
+            with st.form("login_form"):
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+                remember_me = st.checkbox("Remember me on this device")
+                submit = st.form_submit_button("Login")
+                
+                if submit:
+                    if authenticate(username, password):
+                        st.session_state.authenticated = True
+                        st.session_state.username = username
+                        users = load_users()
+                        st.session_state.is_admin = users[username].get("is_admin", False)
+                        
+                        # Set up persistent login if requested
+                        if remember_me:
+                            # Generate a unique session token
+                            session_token = str(uuid.uuid4())
+                            
+                            # Store the token with the user
+                            users = load_users()
+                            users[username]["session_token"] = session_token
+                            save_users(users)
+                            
+                            # Cache the credentials in the session state
+                            credentials = (username, session_token)
+                            encoded = base64.b64encode(pickle.dumps(credentials)).decode()
+                            st.session_state["_cached_credentials"] = encoded
+                        
+                        st.success("Login successful!")
+                        st.rerun()
+                    else:
+                        st.error("Invalid username or password")
+    
+    with signup_tab:
+        if st.session_state.login_tab == "signup" or signup_tab.id:
+            st.session_state.login_tab = "signup"
+            with st.form("signup_form"):
+                new_username = st.text_input("New Username")
+                new_password = st.text_input("New Password", type="password")
+                confirm_password = st.text_input("Confirm Password", type="password")
+                submit = st.form_submit_button("Sign Up")
+                
+                if submit:
+                    if new_password != confirm_password:
+                        st.error("Passwords do not match")
+                    elif not new_username or not new_password:
+                        st.error("Username and password are required")
+                    else:
+                        if create_user(new_username, new_password):
+                            st.success("Account created successfully! You can now login.")
+                            st.session_state.login_tab = "login"
+                            st.rerun()
+                        else:
+                            st.error("Username already exists")
 
 def get_week_dates(date):
     # Get Monday (start) of the week
@@ -68,6 +238,12 @@ if "current_start_date" not in st.session_state:
     st.session_state.current_end_date = end_date
 
 def reset_state():
+    """Reset the session state"""
+    # Save current state before resetting if user is authenticated
+    if "authenticated" in st.session_state and st.session_state.authenticated:
+        save_user_transactions(st.session_state.username, st.session_state.transactions)
+        save_user_history(st.session_state.username, st.session_state.history)
+    
     st.session_state.transactions = []
     st.session_state.page = "main"
     st.session_state.transaction_type = None
@@ -920,18 +1096,122 @@ def show_form():
                 st.rerun()
 
 def save_transaction(date, type_, category, description, amount):
+    """Save a transaction to the session state"""
+    # Format date as string if it's a date object
+    date_str = date.strftime(DATE_FORMAT) if hasattr(date, 'strftime') else date
+    
     transaction = {
-        "Date": date.strftime(DATE_FORMAT),
+        "Date": date_str,
         "Type": type_,
         "Category": category,
         "Description": description,
-        "Amount": amount
+        "Amount": amount,
+        "Username": st.session_state.username  # Add username to transaction
     }
     st.session_state.transactions.append(transaction)
+    
+    # Save transactions to file
+    save_user_transactions(st.session_state.username, st.session_state.transactions)
+
+# User data functions
+def get_user_data_dir():
+    """Get the directory for user data"""
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "users")
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+    return data_dir
+
+def get_user_dir(username):
+    """Get the directory for a specific user"""
+    user_dir = os.path.join(get_user_data_dir(), username)
+    if not os.path.exists(user_dir):
+        os.makedirs(user_dir)
+    return user_dir
+
+def save_user_transactions(username, transactions):
+    """Save user transactions to a JSON file"""
+    if not username:
+        return
+    
+    user_dir = get_user_dir(username)
+    transactions_file = os.path.join(user_dir, "transactions.json")
+    
+    with open(transactions_file, "w") as f:
+        json.dump(transactions, f)
+
+def load_user_transactions(username):
+    """Load user transactions from a JSON file"""
+    if not username:
+        return []
+    
+    user_dir = get_user_dir(username)
+    transactions_file = os.path.join(user_dir, "transactions.json")
+    
+    if os.path.exists(transactions_file):
+        with open(transactions_file, "r") as f:
+            return json.load(f)
+    return []
+
+def save_user_history(username, history):
+    """Save user history to a JSON file"""
+    if not username:
+        return
+    
+    user_dir = get_user_dir(username)
+    history_file = os.path.join(user_dir, "history.json")
+    
+    with open(history_file, "w") as f:
+        json.dump(history, f)
+
+def load_user_history(username):
+    """Load user history from a JSON file"""
+    if not username:
+        return []
+    
+    user_dir = get_user_dir(username)
+    history_file = os.path.join(user_dir, "history.json")
+    
+    if os.path.exists(history_file):
+        with open(history_file, "r") as f:
+            return json.load(f)
+    return []
 
 def main():
-    # Create tabs
-    tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
+    # Check if user is authenticated
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    
+    if not st.session_state.authenticated:
+        show_login_page()
+        return
+    
+    # User is authenticated, show the app
+    st.sidebar.success(f"Logged in as {st.session_state.username}")
+    
+    # Add logout button
+    if st.sidebar.button("Logout"):
+        # Save user data before logging out
+        save_user_transactions(st.session_state.username, st.session_state.transactions)
+        save_user_history(st.session_state.username, st.session_state.history)
+        
+        # Clear session state
+        st.session_state.authenticated = False
+        st.session_state.username = None
+        if "_cached_credentials" in st.session_state:
+            del st.session_state["_cached_credentials"]
+        st.rerun()
+    
+    # Load user data if not already loaded
+    if "user_data_loaded" not in st.session_state or not st.session_state.user_data_loaded:
+        st.session_state.transactions = load_user_transactions(st.session_state.username)
+        st.session_state.history = load_user_history(st.session_state.username)
+        st.session_state.user_data_loaded = True
+    
+    # Create tabs - add Admin tab if user is admin
+    if st.session_state.get("is_admin", False):
+        tab1, tab2, tab3, tab4 = st.tabs(["Registar", "Relatório", "Histórico", "Admin"])
+    else:
+        tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
     
     # Handle tab switching
     if "active_tab" not in st.session_state:
@@ -944,6 +1224,8 @@ def main():
         st.session_state.active_tab = "Registar"
     elif tab3.id and tab3.id != st.session_state.active_tab:
         st.session_state.active_tab = "Histórico"
+    elif st.session_state.get("is_admin", False) and tab4.id and tab4.id != st.session_state.active_tab:
+        st.session_state.active_tab = "Admin"
     
     with tab1:
         if st.session_state.page == "main":
@@ -958,6 +1240,77 @@ def main():
     
     with tab3:
         show_history_tab()
+    
+    # Show admin tab if user is admin
+    if st.session_state.get("is_admin", False):
+        with tab4:
+            show_admin_tab()
+    
+    # Add Dynamic Wallet icon in top right
+    st.markdown("""
+        <style>
+        .dynamic-wallet-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            line-height: 40px;
+            text-align: center;
+            background-color: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        </style>
+        <div class="dynamic-wallet-icon" onclick="window.location.href='.'">💰</div>
+    """, unsafe_allow_html=True)
+
+def show_admin_tab():
+    """Show the admin dashboard"""
+    st.subheader("Admin Dashboard")
+    st.write("View data for all users")
+    
+    # Get list of all users
+    users = load_users()
+    usernames = [username for username in users.keys() if username != "admin" and not username.startswith("_")]
+    
+    # Let admin select a user to view
+    selected_user = st.selectbox("Select User", usernames)
+    
+    if selected_user:
+        st.subheader(f"Data for {selected_user}")
+        
+        # Create tabs for user data
+        user_transactions_tab, user_history_tab = st.tabs(["Transactions", "History"])
+        
+        with user_transactions_tab:
+            # Load user transactions
+            transactions = load_user_transactions(selected_user)
+            if transactions:
+                df_transactions = create_transaction_df(transactions)
+                st.dataframe(df_transactions)
+            else:
+                st.info(f"{selected_user} has no transactions")
+        
+        with user_history_tab:
+            # Load user history
+            history = load_user_history(selected_user)
+            if history:
+                for report in history:
+                    with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
+                        # Create DataFrame from transactions
+                        df_report = create_transaction_df(report['transactions'])
+                        st.dataframe(df_report)
+                        
+                        # Show summary
+                        st.write("Summary:")
+                        st.write(f"Total Income: {format_currency(report['summary']['total_income'])}")
+                        st.write(f"Total Expense: {format_currency(report['summary']['total_expense'])}")
+                        st.write(f"Net Amount: {format_currency(abs(report['summary']['net_amount']))} {'(A entregar)' if report['summary']['net_amount'] >= 0 else '(A receber)'}")
+            else:
+                st.info(f"{selected_user} has no history reports")
 
 def show_history_tab():
     st.subheader("Histórico de Relatórios")
@@ -1214,9 +1567,12 @@ def show_report_tab():
                     'number': format_date_range(st.session_state.current_start_date, st.session_state.current_end_date),
                     'transactions': st.session_state.transactions.copy(),
                     'summary': summary,
-                    'start_date': st.session_state.current_start_date,
-                    'end_date': st.session_state.current_end_date
+                    'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
+                    'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
                 })
+                
+                # Save history to file
+                save_user_history(st.session_state.username, st.session_state.history)
                 
                 # Update to next week's dates
                 next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
