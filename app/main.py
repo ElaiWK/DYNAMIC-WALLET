@@ -955,12 +955,15 @@ def main():
                         'line-height': '1.1',
                         'max-width': 'none',
                         'min-width': '100%',
-                        'height': 'auto',
-                        'overflow-y': 'auto'
+                        'overflow': 'hidden',
+                        'text-overflow': 'ellipsis'
+                    }).set_properties(subset=['Description'], **{
+                        'max-height': '60px',
+                        'overflow-y': 'auto',
+                        'display': 'block'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=None,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
@@ -974,7 +977,7 @@ def main():
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="25rem",
+                            width="20rem",
                             help="Descrição detalhada"
                         ),
                         "Amount": st.column_config.TextColumn(
@@ -996,12 +999,15 @@ def main():
                         'line-height': '1.1',
                         'max-width': 'none',
                         'min-width': '100%',
-                        'height': 'auto',
-                        'overflow-y': 'auto'
+                        'overflow': 'hidden',
+                        'text-overflow': 'ellipsis'
+                    }).set_properties(subset=['Description'], **{
+                        'max-height': '60px',
+                        'overflow-y': 'auto',
+                        'display': 'block'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=None,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
@@ -1015,7 +1021,7 @@ def main():
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="25rem",
+                            width="20rem",
                             help="Descrição detalhada"
                         ),
                         "Amount": st.column_config.TextColumn(
