@@ -937,15 +937,19 @@ def main():
                 st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     income_df.drop("Type", axis=1).style.set_properties(**{
-                        'white-space': 'pre-wrap'
+                        'white-space': 'pre-wrap',
+                        'text-align': 'left',
+                        'height': 'auto',
+                        'min-height': '80px'
                     }),
                     hide_index=True,
                     use_container_width=True,
+                    height=400,
                     column_config={
-                        "Date": {"width": 100},
-                        "Category": {"width": 120},
-                        "Description": {"width": 400},
-                        "Amount": {"width": 100}
+                        "Date": st.column_config.TextColumn(width="small"),
+                        "Category": st.column_config.TextColumn(width="small"),
+                        "Description": st.column_config.TextColumn(width="large"),
+                        "Amount": st.column_config.TextColumn(width="small")
                     }
                 )
             
@@ -954,15 +958,19 @@ def main():
                 st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
                 st.dataframe(
                     expense_df.drop("Type", axis=1).style.set_properties(**{
-                        'white-space': 'pre-wrap'
+                        'white-space': 'pre-wrap',
+                        'text-align': 'left',
+                        'height': 'auto',
+                        'min-height': '80px'
                     }),
                     hide_index=True,
                     use_container_width=True,
+                    height=400,
                     column_config={
-                        "Date": {"width": 100},
-                        "Category": {"width": 120},
-                        "Description": {"width": 400},
-                        "Amount": {"width": 100}
+                        "Date": st.column_config.TextColumn(width="small"),
+                        "Category": st.column_config.TextColumn(width="small"),
+                        "Description": st.column_config.TextColumn(width="large"),
+                        "Amount": st.column_config.TextColumn(width="small")
                     }
                 )
             
