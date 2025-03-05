@@ -939,16 +939,15 @@ def main():
                     income_df.drop("Type", axis=1).style.set_properties(**{
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
-                        'height': 'auto',
-                        'min-height': '80px'
+                        'padding': '0.5rem',
+                        'line-height': '1.2'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=400,
                     column_config={
                         "Date": st.column_config.TextColumn(width="small"),
                         "Category": st.column_config.TextColumn(width="small"),
-                        "Description": st.column_config.TextColumn(width="large"),
+                        "Description": st.column_config.TextColumn(width="large", max_chars=50),
                         "Amount": st.column_config.TextColumn(width="small")
                     }
                 )
@@ -960,16 +959,15 @@ def main():
                     expense_df.drop("Type", axis=1).style.set_properties(**{
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
-                        'height': 'auto',
-                        'min-height': '80px'
+                        'padding': '0.5rem',
+                        'line-height': '1.2'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=400,
                     column_config={
                         "Date": st.column_config.TextColumn(width="small"),
                         "Category": st.column_config.TextColumn(width="small"),
-                        "Description": st.column_config.TextColumn(width="large"),
+                        "Description": st.column_config.TextColumn(width="large", max_chars=50),
                         "Amount": st.column_config.TextColumn(width="small")
                     }
                 )
