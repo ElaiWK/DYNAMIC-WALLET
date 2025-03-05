@@ -952,16 +952,15 @@ def main():
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
                         'padding': '0.3rem',
-                        'line-height': '1.2',
+                        'line-height': '1.1',
                         'max-width': 'none',
                         'min-width': '100%',
-                        'height': '60px',
-                        'max-height': '60px',
+                        'height': 'auto',
                         'overflow-y': 'auto'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=400,
+                    height=None,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
@@ -970,17 +969,17 @@ def main():
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width="small",
+                            width="8rem",
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="medium",
+                            width="25rem",
                             help="Descrição detalhada"
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width="small",
+                            width="7rem",
                             help="Valor da transação"
                         )
                     }
@@ -994,16 +993,15 @@ def main():
                         'white-space': 'pre-wrap',
                         'text-align': 'left',
                         'padding': '0.3rem',
-                        'line-height': '1.2',
+                        'line-height': '1.1',
                         'max-width': 'none',
                         'min-width': '100%',
-                        'height': '60px',
-                        'max-height': '60px',
+                        'height': 'auto',
                         'overflow-y': 'auto'
                     }),
                     hide_index=True,
                     use_container_width=True,
-                    height=400,
+                    height=None,
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
@@ -1012,17 +1010,17 @@ def main():
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width="small",
+                            width="8rem",
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="medium",
+                            width="25rem",
                             help="Descrição detalhada"
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width="small",
+                            width="7rem",
                             help="Valor da transação"
                         )
                     }
