@@ -322,7 +322,7 @@ def show_form():
         
         # Create description with collaborator names
         names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{st.session_state.meal_num_people} colaboradores"
-        description = f"{meal_type} com {names_str}"
+        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)})"
 
         # Add more spacing after collaborator fields
         st.write("")
@@ -912,6 +912,12 @@ def main():
                 filtered_df = filtered_df[filtered_df["Type"] == type_filter]
             if category_filter != "Todas":
                 filtered_df = filtered_df[filtered_df["Category"] == category_filter]
+            
+            # Sort by Type (Entradas first) and Date
+            filtered_df = filtered_df.sort_values(
+                by=["Type", "Date"],
+                ascending=[False, True]  # False for Type puts INCOME (Entradas) first
+            )
             
             # Format the amount column with currency for display
             filtered_df_display = filtered_df.copy()
