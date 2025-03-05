@@ -1002,13 +1002,6 @@ def main():
             # Show summary statistics
             st.write("")
             
-            # Add TEST indicator
-            st.markdown("""
-            <div style="background-color: #ff4b4b; color: white; padding: 10px; border-radius: 5px; text-align: center; margin-bottom: 20px;">
-                <span style="font-size: 18px; font-weight: bold;">TEST INDICATOR</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
             # Create a more visible summary section with line-by-line format
             st.markdown("""
             <div style="margin: 20px 0;">
@@ -1026,14 +1019,13 @@ def main():
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Saldo: </span>
                     <span style="font-size: 16px; color: white !important; font-weight: 500;">{}</span>
-                    <span style="font-size: 16px; color: {}; font-weight: 500;">({})</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">({})</span>
                 </div>
             </div>
             """.format(
                 format_currency(total_income),
                 format_currency(total_expense),
                 format_currency(abs(net_amount)),
-                '#4CAF50' if net_amount >= 0 else '#ff4b4b',
                 'A entregar' if net_amount >= 0 else 'A receber'
             ), unsafe_allow_html=True)
             
