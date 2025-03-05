@@ -147,6 +147,24 @@ def navigate_back():
                 del st.session_state.collaborator_names
             if "meal_date" in st.session_state:
                 del st.session_state.meal_date
+        # Reset HR form state if coming from HR form
+        elif st.session_state.category == ExpenseCategory.HR.value:
+            if "hr_role" in st.session_state:
+                del st.session_state.hr_role
+            if "hr_date" in st.session_state:
+                del st.session_state.hr_date
+            if "hr_collaborator" in st.session_state:
+                del st.session_state.hr_collaborator
+        # Reset purchase form state if coming from purchase form
+        elif st.session_state.category == ExpenseCategory.OTHER.value:
+            if "purchase_what" in st.session_state:
+                del st.session_state.purchase_what
+            if "purchase_amount" in st.session_state:
+                del st.session_state.purchase_amount
+            if "purchase_justification" in st.session_state:
+                del st.session_state.purchase_justification
+            if "purchase_date" in st.session_state:
+                del st.session_state.purchase_date
         # Reset delivery form state if coming from delivery form
         elif st.session_state.category == ExpenseCategory.DELIVERY.value:
             if "delivery_collaborator" in st.session_state:
@@ -357,6 +375,196 @@ def show_form():
                         st.rerun()
                     else:
                         st.error(error)
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    elif st.session_state.category == ExpenseCategory.HR.value:
+        # Initialize session state for HR form
+        if "hr_role" not in st.session_state:
+            st.session_state.hr_role = ""
+        if "hr_collaborator" not in st.session_state:
+            st.session_state.hr_collaborator = ""
+        if "hr_date" not in st.session_state:
+            st.session_state.hr_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.hr_date,
+            key="hr_date_input"
+        )
+        if selected_date != st.session_state.hr_date:
+            st.session_state.hr_date = selected_date
+            st.rerun()
+        
+        # Collaborator name field
+        new_collaborator = st.text_input(
+            "Nome do Colaborador",
+            value=st.session_state.hr_collaborator,
+            key="hr_collaborator_input"
+        )
+        if new_collaborator != st.session_state.hr_collaborator:
+            st.session_state.hr_collaborator = new_collaborator
+            st.rerun()
+        
+        # Role selection
+        new_role = st.selectbox(
+            "Função",
+            options=list(HR_RATES.keys()),
+            key="hr_role_input"
+        )
+        if new_role != st.session_state.hr_role:
+            st.session_state.hr_role = new_role
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Calculate and display amount
+        amount = HR_RATES[st.session_state.hr_role]
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_hr"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.hr_collaborator.strip():
+                    validation_error = "Por favor, insira o nome do colaborador"
+                elif not st.session_state.hr_role:
+                    validation_error = "Por favor, selecione uma função"
+                elif HR_RATES[st.session_state.hr_role] <= 0:
+                    validation_error = "Por favor, selecione uma função válida"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"{st.session_state.hr_collaborator} - {st.session_state.hr_role}"
+                    save_transaction(
+                        st.session_state.hr_date,
+                        TransactionType.EXPENSE.value,
+                        ExpenseCategory.HR.value,
+                        description,
+                        HR_RATES[st.session_state.hr_role]
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.hr_role
+                    del st.session_state.hr_collaborator
+                    del st.session_state.hr_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    elif st.session_state.category == ExpenseCategory.OTHER.value:
+        # Initialize session state for purchase form
+        if "purchase_what" not in st.session_state:
+            st.session_state.purchase_what = ""
+        if "purchase_amount" not in st.session_state:
+            st.session_state.purchase_amount = 0.0
+        if "purchase_justification" not in st.session_state:
+            st.session_state.purchase_justification = ""
+        if "purchase_date" not in st.session_state:
+            st.session_state.purchase_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.purchase_date,
+            key="purchase_date_input"
+        )
+        if selected_date != st.session_state.purchase_date:
+            st.session_state.purchase_date = selected_date
+            st.rerun()
+        
+        # What field
+        new_what = st.text_input(
+            "O quê?",
+            value=st.session_state.purchase_what,
+            key="purchase_what_input"
+        )
+        if new_what != st.session_state.purchase_what:
+            st.session_state.purchase_what = new_what
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor da Fatura (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.purchase_amount,
+            key="purchase_amount_input"
+        )
+        if new_amount != st.session_state.purchase_amount:
+            st.session_state.purchase_amount = new_amount
+            st.rerun()
+        
+        # Justification field
+        new_justification = st.text_area(
+            "Justificação",
+            value=st.session_state.purchase_justification,
+            key="purchase_justification_input"
+        )
+        if new_justification != st.session_state.purchase_justification:
+            st.session_state.purchase_justification = new_justification
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.purchase_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_purchase"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.purchase_what.strip():
+                    validation_error = "Por favor, especifique o que foi comprado"
+                elif st.session_state.purchase_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                elif not st.session_state.purchase_justification.strip():
+                    validation_error = "Por favor, forneça uma justificação"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"{st.session_state.purchase_what} - {st.session_state.purchase_justification}"
+                    save_transaction(
+                        st.session_state.purchase_date,
+                        TransactionType.EXPENSE.value,
+                        ExpenseCategory.OTHER.value,
+                        description,
+                        st.session_state.purchase_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.purchase_what
+                    del st.session_state.purchase_amount
+                    del st.session_state.purchase_justification
+                    del st.session_state.purchase_date
+                    st.session_state.page = "main"
+                    st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
     
     elif st.session_state.category == ExpenseCategory.DELIVERY.value:
