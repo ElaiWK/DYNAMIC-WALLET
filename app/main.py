@@ -885,13 +885,8 @@ def main():
             show_form()
     
     with tab2:
-        # Add a prominent test indicator and simpler title
-        st.markdown("""
-            <div style="background-color: #ff4b4b; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; text-align: center;">
-                <h2 style="margin: 0;">TEST INDICATOR</h2>
-            </div>
-            <h2>Relatório</h2>
-        """, unsafe_allow_html=True)
+        # Simple title for the report tab
+        st.subheader("Relatório")
         
         if st.session_state.transactions:
             df = create_transaction_df(st.session_state.transactions)
