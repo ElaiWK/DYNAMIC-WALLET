@@ -936,7 +936,9 @@ def main():
             if not income_df.empty:
                 st.markdown("<h4 style='font-size: 18px;'>Entradas</h4>", unsafe_allow_html=True)
                 st.dataframe(
-                    income_df.drop("Type", axis=1),  # Remove Type column
+                    income_df.drop("Type", axis=1).style.set_properties(**{
+                        'white-space': 'pre-wrap'
+                    }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
@@ -951,7 +953,9 @@ def main():
             if not expense_df.empty:
                 st.markdown("<h4 style='font-size: 18px;'>Saídas</h4>", unsafe_allow_html=True)
                 st.dataframe(
-                    expense_df.drop("Type", axis=1),  # Remove Type column
+                    expense_df.drop("Type", axis=1).style.set_properties(**{
+                        'white-space': 'pre-wrap'
+                    }),
                     hide_index=True,
                     use_container_width=True,
                     column_config={
