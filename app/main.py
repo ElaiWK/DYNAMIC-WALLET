@@ -450,7 +450,7 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Calculate and always display amount
+        # Calculate and always display amount for meals
         calculated_amount = 0
         if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
             calculated_amount, _ = calculate_meal_expense(
@@ -459,14 +459,13 @@ def show_form():
                 meal_type
             )
         
-        if calculated_amount > 0:
-            st.markdown('<div class="amount-title">Valor por Pessoa</div>', unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="amount-container">
-                <div class="value">{format_currency(calculated_amount)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+        st.markdown('<div class="amount-title">Valor por Pessoa</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="amount-container">
+            <div class="value">{format_currency(calculated_amount)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
         st.write("")  # Add space before submit button
         
         # Add submit button
@@ -554,15 +553,14 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Calculate and display amount
-        amount = HR_RATES[st.session_state.hr_role]
-        if amount > 0:
-            st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="amount-container">
-                <div class="value">{format_currency(amount)}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Calculate and always display amount for HR
+        amount = HR_RATES.get(st.session_state.hr_role, 0)
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="amount-container">
+            <div class="value">{format_currency(amount)}</div>
+        </div>
+        """, unsafe_allow_html=True)
         
         st.write("")  # Add space before submit button
         
@@ -658,10 +656,11 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Display amount
+        # Always display amount for purchases
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.purchase_amount)}</h2>
+        <div class="amount-container">
+            <div class="value">{format_currency(st.session_state.purchase_amount)}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -748,10 +747,11 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Display amount
+        # Always display amount for deliveries
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_amount)}</h2>
+        <div class="amount-container">
+            <div class="value">{format_currency(st.session_state.delivery_amount)}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -835,10 +835,11 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Display amount
+        # Always display amount for services
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.service_amount)}</h2>
+        <div class="amount-container">
+            <div class="value">{format_currency(st.session_state.service_amount)}</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -922,10 +923,11 @@ def show_form():
         st.write("")
         st.write("")
         
-        # Display amount
+        # Always display amount for delivery income
+        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin: 10px 0;">
-            <h2 style="color: #4CAF50; font-size: 24px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_income_amount)}</h2>
+        <div class="amount-container">
+            <div class="value">{format_currency(st.session_state.delivery_income_amount)}</div>
         </div>
         """, unsafe_allow_html=True)
         
