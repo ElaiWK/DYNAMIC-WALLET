@@ -1862,73 +1862,123 @@ def show_report_tab():
         if category_filter != "Todas":
             df = df[df["Category"] == category_filter]
         
-        # Date range selection
-        st.write("")
-        st.write("Selecione o período:")
-        
-        # Use columns for date inputs
-        date_col1, date_col2 = st.columns(2)
-        
-        with date_col1:
-            start_date = st.date_input(
-                "Data Inicial",
-                value=st.session_state.current_start_date,
-                key="start_date"
-            )
-        
-        with date_col2:
-            end_date = st.date_input(
-                "Data Final",
-                value=st.session_state.current_end_date,
-                key="end_date"
-            )
-        
-        # Convert dates to string format for filtering
-        start_date_str = start_date.strftime(DATE_FORMAT)
-        end_date_str = end_date.strftime(DATE_FORMAT)
-        
-        # Update session state with selected dates
-        st.session_state.current_start_date = start_date
-        st.session_state.current_end_date = end_date
-        
-        # Save current dates to user history
-        if "history" not in st.session_state:
-            st.session_state.history = []
-        
-        # Auto-save user data periodically
-        save_user_transactions(st.session_state.username, st.session_state.transactions)
-        save_user_history(st.session_state.username, st.session_state.history)
-        
-        # Filter by date range
+        # Filter by current date range
         df["Date"] = pd.to_datetime(df["Date"], format=DATE_FORMAT)
-        df = df[(df["Date"] >= pd.to_datetime(start_date_str, format=DATE_FORMAT)) & 
-                (df["Date"] <= pd.to_datetime(end_date_str, format=DATE_FORMAT))]
+        df = df[(df["Date"] >= pd.to_datetime(st.session_state.current_start_date, format=DATE_FORMAT)) & 
+                (df["Date"] <= pd.to_datetime(st.session_state.current_end_date, format=DATE_FORMAT))]
         
         # Convert back to string for display
-        df["Date"] = df["Date"].dt.strftime(DATE_FORMAT)
+        df["Date"] = df["Date"].dt.strftime("%d/%m/%Y")
+        
+        # Split dataframe by type
+        income_df = df[df["Type"] == TransactionType.INCOME.value].copy()
+        expense_df = df[df["Type"] == TransactionType.EXPENSE.value].copy()
+        
+        # Sort each dataframe by date
+        income_df = income_df.sort_values("Date", ascending=True)
+        expense_df = expense_df.sort_values("Date", ascending=True)
+        
+        # Format amounts for display
+        income_df["Amount"] = income_df["Amount"].apply(format_currency)
+        expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
+        
+        # Display income transactions
+        if not income_df.empty:
+            st.markdown("<h4 style='font-size: 18px; color: white;'>Entradas</h4>", unsafe_allow_html=True)
+            for _, row in income_df.iterrows():
+                st.markdown(f"""
+                <div style="
+                    background-color: #1E1E1E;
+                    border-left: 4px solid #4CAF50;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #CCCCCC;">{row['Date']}</span>
+                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                            {row['Category']}
+                        </span>
+                    </div>
+                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                        {row['Description']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Display expense transactions
+        if not expense_df.empty:
+            st.markdown("<h4 style='font-size: 18px; color: white;'>Saídas</h4>", unsafe_allow_html=True)
+            for _, row in expense_df.iterrows():
+                st.markdown(f"""
+                <div style="
+                    background-color: #1E1E1E;
+                    border-left: 4px solid #ff4b4b;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #CCCCCC;">{row['Date']}</span>
+                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
+                    </div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
+                            {row['Category']}
+                        </span>
+                    </div>
+                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
+                        {row['Description']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # Calculate summary statistics
+        summary = get_period_summary(df)
+        
+        # Show summary statistics
+        st.write("")
+        st.markdown(f"""
+        <div style="margin: 20px 0;">
+            <div style="margin-bottom: 15px;">
+                <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Total Entradas: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary.get('total_income', 0))}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Total Saídas: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary.get('total_expense', 0))}</span>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <span style="font-size: 16px; color: white;">Saldo: </span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(summary.get('net_amount', 0)))}</span>
+                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if summary.get('net_amount', 0) >= 0 else 'A receber'})</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Generate report button
         if st.button("Gerar Relatório"):
             # Verificar se a data final é igual ou anterior à data atual
             today = datetime.now().date()
-            if end_date > today:
-                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({end_date.strftime(DATE_FORMAT)}) deve ser igual ou anterior à data atual ({today.strftime(DATE_FORMAT)}).")
+            if st.session_state.current_end_date > today:
+                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({st.session_state.current_end_date.strftime('%Y-%m-%d')}) deve ser igual ou anterior à data atual ({today.strftime('%Y-%m-%d')}).")
             else:
                 # Create a unique report number based on the current date
                 report_number = f"Relatório {st.session_state.report_counter}"
                 st.session_state.report_counter += 1
                 
-                # Calculate summary statistics
-                summary = get_period_summary(df)
-                
                 # Create a report object
                 report = {
                     "number": report_number,
-                    "period": f"{start_date_str} a {end_date_str}",
+                    "period": f"{st.session_state.current_start_date.strftime('%Y-%m-%d')} a {st.session_state.current_end_date.strftime('%Y-%m-%d')}",
                     "transactions": df.to_dict("records"),
                     "summary": summary,
-                    'start_date': st.session_state.current_start_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
-                    'end_date': st.session_state.current_end_date.strftime(DATE_FORMAT) if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
+                    'start_date': st.session_state.current_start_date.strftime('%Y-%m-%d') if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
+                    'end_date': st.session_state.current_end_date.strftime('%Y-%m-%d') if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
                 }
                 
                 # Add to history
@@ -1949,6 +1999,8 @@ def show_report_tab():
                 
                 # Mostrar mensagem de sucesso
                 st.success(f"Relatório {report_number} gerado com sucesso!")
+    else:
+        st.info("Não há transações registradas para o período atual.")
 
 if __name__ == "__main__":
     try:
