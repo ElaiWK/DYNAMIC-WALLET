@@ -940,22 +940,22 @@ def main():
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width="small",
+                            width=80,
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width="medium",
+                            width=120,
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="large",
+                            width=400,
                             help="Descrição da transação"
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width="small",
+                            width=100,
                             help="Valor da transação"
                         )
                     },
@@ -971,22 +971,22 @@ def main():
                     column_config={
                         "Date": st.column_config.TextColumn(
                             "Data",
-                            width="small",
+                            width=80,
                             help="Data da transação"
                         ),
                         "Category": st.column_config.TextColumn(
                             "Categoria",
-                            width="medium",
+                            width=120,
                             help="Categoria da transação"
                         ),
                         "Description": st.column_config.TextColumn(
                             "Descrição",
-                            width="large",
+                            width=400,
                             help="Descrição da transação"
                         ),
                         "Amount": st.column_config.TextColumn(
                             "Valor",
-                            width="small",
+                            width=100,
                             help="Valor da transação"
                         )
                     },
