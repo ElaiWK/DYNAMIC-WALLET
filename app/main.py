@@ -1044,16 +1044,15 @@ def main():
     # Create tabs
     tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
-    # Handle tab switching - reset to main page when clicking Registar tab
+    # Handle tab switching
     if "active_tab" not in st.session_state:
         st.session_state.active_tab = "Registar"
     
-    # Check if we switched to Registar tab
-    if tab1.id != st.session_state.active_tab and tab1.id:
-        st.session_state.page = "main"
-        st.session_state.active_tab = tab1.id
-    elif tab2.id != st.session_state.active_tab and tab2.id:
-        st.session_state.active_tab = tab2.id
+    # Only update active tab when explicitly switching tabs
+    if tab2.id and tab2.id != st.session_state.active_tab:
+        st.session_state.active_tab = "Relatório"
+    elif tab1.id and tab1.id != st.session_state.active_tab:
+        st.session_state.active_tab = "Registar"
     
     with tab1:
         if st.session_state.page == "main":
