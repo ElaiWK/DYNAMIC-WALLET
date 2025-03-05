@@ -152,11 +152,36 @@ def show_home_button():
 
 def show_main_page():
     # Center the title without icon
-    st.markdown("""
+    st.markdown(f"""
         <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
         <div style="text-align: right; font-size: 14px; color: #888888; margin-bottom: 40px;">
             {format_date_range(st.session_state.current_start_date, st.session_state.current_end_date)}
         </div>
+        <style>
+        .amount-title {
+            color: white;
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .amount-container {
+            background-color: #262730;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .amount-container .value {
+            color: white;
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .amount-container .status {
+            color: #888888;
+            font-size: 16px;
+        }
+        </style>
     """, unsafe_allow_html=True)
     
     # Check if submission is late
