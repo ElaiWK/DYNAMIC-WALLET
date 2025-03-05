@@ -32,72 +32,80 @@ st.set_page_config(
 # Custom CSS
 st.markdown("""
 <style>
-    /* Main buttons (green) */
+    /* Reset all button styles first */
     div.stButton > button {
-        background-color: #4CAF50 !important;
-        border: none !important;
-        color: white !important;
-        padding: 15px 30px !important;
-        text-align: center !important;
-        text-decoration: none !important;
-        display: inline-block !important;
-        font-size: 16px !important;
-        margin: 4px 2px !important;
+        all: unset !important;
         cursor: pointer !important;
-        border-radius: 8px !important;
-        width: auto !important;
         transition: all 0.3s !important;
-        line-height: 1.5 !important;
-        height: auto !important;
     }
 
-    div.stButton > button:hover {
+    /* Main action buttons (Saídas/Entradas) */
+    div.element-container:has(button[kind="primary"]) button {
+        background-color: #4CAF50 !important;
+        color: white !important;
+        padding: 24px 48px !important;
+        font-size: 20px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        text-align: center !important;
+        display: block !important;
+    }
+
+    div.element-container:has(button[kind="primary"]) button:hover {
         background-color: #45a049 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
 
-    /* Back button specific styling */
-    div.back-container {
-        text-align: right !important;
-        margin-bottom: 20px !important;
-    }
-
-    div.back-container > div.stButton > button {
-        background: none !important;
-        border: none !important;
+    /* Back button */
+    div.back-container button {
         color: #4a4a4a !important;
-        padding: 0 !important;
         font-size: 14px !important;
         text-decoration: underline !important;
-        width: auto !important;
-        min-width: 0 !important;
+        text-align: right !important;
         display: inline !important;
+        width: auto !important;
     }
 
-    div.back-container > div.stButton > button:hover {
+    div.back-container button:hover {
         color: #2b2b2b !important;
-        background: none !important;
-        transform: none !important;
-        box-shadow: none !important;
     }
 
     /* Category buttons */
-    div.category-button > div.stButton > button {
-        width: 100% !important;
-        margin: 8px 0 !important;
+    div.category-button button {
+        background-color: white !important;
+        color: #333333 !important;
+        border: 2px solid #e0e0e0 !important;
         padding: 20px !important;
         font-size: 18px !important;
-    }
-
-    /* Submit button (red) */
-    div.meal-submit-button > div.stButton > button {
-        background-color: #ff4b4b !important;
+        border-radius: 8px !important;
         width: 100% !important;
+        text-align: center !important;
+        display: block !important;
+        margin: 8px 0 !important;
     }
 
-    div.meal-submit-button > div.stButton > button:hover {
+    div.category-button button:hover {
+        border-color: #4CAF50 !important;
+        transform: translateX(5px) !important;
+    }
+
+    /* Submit buttons */
+    div.meal-submit-button button {
+        background-color: #ff4b4b !important;
+        color: white !important;
+        padding: 24px 48px !important;
+        font-size: 20px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        text-align: center !important;
+        display: block !important;
+    }
+
+    div.meal-submit-button button:hover {
         background-color: #e64444 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
 
     /* Balance container styling */
