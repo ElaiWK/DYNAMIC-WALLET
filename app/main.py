@@ -1014,26 +1014,17 @@ def save_transaction(date, type_, category, description, amount):
 
 def main():
     # Create tabs
-    current_tab = st.tabs(["Registar", "Relatório"])[0]  # Get the currently selected tab
+    tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
-    # Handle tab switching
-    if "previous_tab" not in st.session_state:
-        st.session_state.previous_tab = "Registar"
-    
-    # Check if we actually switched from Relatório to Registar
-    if current_tab == "Registar" and st.session_state.previous_tab == "Relatório":
-        st.session_state.page = "main"
-    
-    st.session_state.previous_tab = current_tab
-    
-    if current_tab == "Registar":
+    with tab1:
         if st.session_state.page == "main":
             show_main_page()
         elif st.session_state.page == "categories":
             show_categories()
         elif st.session_state.page == "form":
             show_form()
-    else:  # Relatório tab
+    
+    with tab2:
         # Update active tab
         st.session_state.active_tab = "Relatório"
         
