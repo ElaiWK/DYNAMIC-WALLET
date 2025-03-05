@@ -3,11 +3,11 @@ credentials:
     admin:
       email: admin@mdwallet.com
       name: Administrator
-      password: $2b$12$7YXnG2yh5RZN3TktBAe9RQcJHF0T7QQhpKz6FwCQ3ZBmJ0Wdqe  # Password: admin123
+      password: $2b$12$a8w/xyRsQ6BgkTEMe6NiI.PrueBouT/NyYKXurFnGiGniXjYlM5Sy  # Password: admin123
     usuario1:
       email: user1@mdwallet.com
       name: Usuario 1
-      password: $2b$12$PwQJ8iP/FSC7aCPh8iCF1.XuLGYbQQjzlXRF0eqXkQQHE5ZQhXpyG  # Password: user123
+      password: $2b$12$mrWZdi0LGT5d/UCMPwsHMuO5V2IXuEYi1bBQkddJtT3prUiYOLQre  # Password: user123
 cookie:
   expiry_days: 0
   key: dynamic_wallet_secure_key_2024
