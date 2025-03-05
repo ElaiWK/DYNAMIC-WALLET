@@ -300,24 +300,39 @@ def show_form():
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
             if st.button("Submeter", key="submit_meal"):
-                amount, error = calculate_meal_expense(
-                    st.session_state.meal_total_amount, 
-                    st.session_state.meal_num_people, 
-                    meal_type
-                )
-                if not error:
-                    save_transaction(
-                        st.session_state.meal_date,
-                        TransactionType.EXPENSE.value, 
-                        ExpenseCategory.MEAL.value, 
-                        description, 
-                        amount
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    st.session_state.page = "main"
-                    st.rerun()
+                # Validate all fields are filled
+                validation_error = None
+                if st.session_state.meal_total_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido para a fatura"
+                elif not all(name.strip() for name in st.session_state.collaborator_names):
+                    validation_error = "Por favor, preencha os nomes de todos os colaboradores"
+                
+                if validation_error:
+                    st.error(validation_error)
                 else:
-                    st.error(error)
+                    amount, error = calculate_meal_expense(
+                        st.session_state.meal_total_amount, 
+                        st.session_state.meal_num_people, 
+                        meal_type
+                    )
+                    if not error:
+                        save_transaction(
+                            st.session_state.meal_date,
+                            TransactionType.EXPENSE.value, 
+                            ExpenseCategory.MEAL.value, 
+                            description, 
+                            amount
+                        )
+                        st.success("Transação registrada com sucesso!")
+                        # Reset form state
+                        del st.session_state.meal_total_amount
+                        del st.session_state.meal_num_people
+                        del st.session_state.collaborator_names
+                        del st.session_state.meal_date
+                        st.session_state.page = "main"
+                        st.rerun()
+                    else:
+                        st.error(error)
             st.markdown('</div>', unsafe_allow_html=True)
     
     else:
