@@ -191,6 +191,9 @@ def show_form():
     st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
     
     if st.session_state.category == ExpenseCategory.MEAL.value:
+        # Test message to verify connection
+        st.markdown("<h3 style='color: red;'>TEST - Connected and Updated!</h3>", unsafe_allow_html=True)
+        
         # Initialize session state for meal form
         if "meal_total_amount" not in st.session_state:
             st.session_state.meal_total_amount = 0.0
@@ -245,29 +248,6 @@ def show_form():
         
         meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
         
-        # Calculate amount
-        calculated_amount = 0
-        if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
-            calculated_amount, _ = calculate_meal_expense(
-                st.session_state.meal_total_amount, 
-                st.session_state.meal_num_people, 
-                meal_type
-            )
-            st.markdown(f"""
-            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-                <h3 style="color: #4CAF50;">{format_currency(calculated_amount)}</h3>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Show calculated amount per person
-        per_person_amount = min(st.session_state.meal_total_amount / st.session_state.meal_num_people, 12)
-        st.markdown(f"""
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-            <p style="margin: 0;">Valor por pessoa: <strong style="color: #4CAF50;">{format_currency(per_person_amount)}</strong></p>
-            <p style="margin: 0;">Valor total: <strong style="color: #4CAF50;">{format_currency(calculated_amount)}</strong></p>
-        </div>
-        """, unsafe_allow_html=True)
-        
         # Collaborator name fields
         for i in range(st.session_state.meal_num_people):
             st.session_state.collaborator_names[i] = st.text_input(
@@ -279,6 +259,42 @@ def show_form():
         # Create description with collaborator names
         names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{st.session_state.meal_num_people} colaboradores"
         description = f"{meal_type} com {names_str}"
+
+        # Add more spacing after collaborator fields
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Calculate and display amount only once at the end
+        calculated_amount = 0
+        per_person_amount = 0
+        if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
+            calculated_amount, _ = calculate_meal_expense(
+                st.session_state.meal_total_amount, 
+                st.session_state.meal_num_people, 
+                meal_type
+            )
+            per_person_amount = min(st.session_state.meal_total_amount / st.session_state.meal_num_people, 12)
+            st.markdown(f"""
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(calculated_amount)}</h2>
+                <p style="color: #666; text-align: center; margin: 10px 0 0 0;">Valor por pessoa: {format_currency(per_person_amount)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button with red color
+        st.markdown("""
+        <style>
+        div[data-testid="stButton"] > button[kind="primary"] {
+            background-color: #ff4b4b;
+        }
+        div[data-testid="stButton"] > button[kind="primary"]:hover {
+            background-color: #e64444;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
         if st.button("Submeter", key="submit_meal"):
             amount, error = calculate_meal_expense(
