@@ -255,7 +255,7 @@ def show_form():
     if st.button("← Voltar para Categorias", key="back_to_categories"):
         navigate_back()
     
-    st.subheader(f"{'Despesa' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Receita'} - {st.session_state.category}")
+    st.subheader(f"{'Saída' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Entrada'} - {st.session_state.category}")
     
     if st.session_state.category == ExpenseCategory.MEAL.value:
         # Initialize session state for meal form

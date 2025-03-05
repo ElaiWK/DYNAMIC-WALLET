@@ -57,17 +57,9 @@ def create_transaction_df(transactions):
 def get_period_summary(df):
     """Calculate summary statistics for a period."""
     if df.empty:
-        return {
-            "total_expenses": 0,
-            "total_income": 0,
-            "net_amount": 0
-        }
+        return {"net_amount": 0}
     
-    expenses = df[df["Type"] == "Despesa"]["Amount"].sum()
-    income = df[df["Type"] == "Receita"]["Amount"].sum()
+    expenses = df[df["Type"] == "Saída"]["Amount"].sum()
+    income = df[df["Type"] == "Entrada"]["Amount"].sum()
     
-    return {
-        "total_expenses": expenses,
-        "total_income": income,
-        "net_amount": income - expenses
-    } 
+    return {"net_amount": income - expenses} 

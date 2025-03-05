@@ -2,8 +2,8 @@ from enum import Enum
 
 # Transaction Types
 class TransactionType(Enum):
-    EXPENSE = "Despesa"
-    INCOME = "Receita"
+    EXPENSE = "Saída"
+    INCOME = "Entrada"
 
 # Expense Categories
 class ExpenseCategory(Enum):
