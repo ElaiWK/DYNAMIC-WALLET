@@ -111,13 +111,19 @@ st.markdown("""
     div.back-button > button {
         background-color: #6c757d;
         color: white;
-        padding: 8px 16px;
+        padding: 4px 12px;
         border-radius: 4px;
         text-decoration: none;
-        font-size: 14px;
-        margin-bottom: 20px;
+        font-size: 12px;
+        margin-bottom: 10px;
         display: inline-block;
-        width: auto;
+        width: auto !important;
+        transition: all 0.2s;
+    }
+    div.back-button > button:hover {
+        background-color: #5a6268;
+        transform: none;
+        box-shadow: none;
     }
     .form-container {
         background-color: white;
@@ -252,8 +258,10 @@ def show_main_page():
 
 def show_categories():
     # Back button
+    st.markdown('<div class="back-button">', unsafe_allow_html=True)
     if st.button("← Voltar", key="back_button"):
         navigate_back()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.subheader("Selecione a Categoria")
     
@@ -269,8 +277,10 @@ def show_categories():
 
 def show_form():
     # Back button
+    st.markdown('<div class="back-button">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories"):
         navigate_back()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.subheader(f"{'Saída' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Entrada'} - {st.session_state.category}")
     
