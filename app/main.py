@@ -140,7 +140,30 @@ st.markdown("""
         margin-bottom: 20px !important;
     }
     div.stButton.link-container > button {
-        width: auto;
+        width: auto !important;
+    }
+    /* Back button specific styling */
+    button[kind="secondary"] {
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #4a4a4a !important;
+        font-size: 14px !important;
+        text-decoration: underline !important;
+        cursor: pointer !important;
+        width: auto !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        min-height: 0 !important;
+        line-height: normal !important;
+    }
+    button[kind="secondary"]:hover {
+        color: #2b2b2b !important;
+        background: none !important;
+        border: none !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -269,8 +292,8 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    st.markdown('<div class="stButton link-container">', unsafe_allow_html=True)
-    if st.button("← Voltar", key="back_button", type="secondary"):
+    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    if st.button("← Voltar", key="back_button", type="secondary", use_container_width=False):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
@@ -288,8 +311,8 @@ def show_categories():
 
 def show_form():
     # Back button
-    st.markdown('<div class="stButton link-container">', unsafe_allow_html=True)
-    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary"):
+    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary", use_container_width=False):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
     
