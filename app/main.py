@@ -392,7 +392,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_meal"):
+            if st.button("Submeter", key="submit_meal", use_container_width=True):
                 # Validate all fields are filled
                 validation_error = None
                 if st.session_state.meal_total_amount <= 0:
@@ -490,7 +490,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_hr"):
+            if st.button("Submeter", key="submit_hr", use_container_width=True):
                 # Validate fields
                 validation_error = None
                 if not st.session_state.hr_collaborator.strip():
@@ -594,7 +594,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_purchase"):
+            if st.button("Submeter", key="submit_purchase", use_container_width=True):
                 # Validate fields
                 validation_error = None
                 if not st.session_state.purchase_what.strip():
@@ -687,7 +687,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_delivery"):
+            if st.button("Submeter", key="submit_delivery", use_container_width=True):
                 # Validate fields
                 validation_error = None
                 if not st.session_state.delivery_collaborator.strip():
@@ -777,7 +777,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_service"):
+            if st.button("Submeter", key="submit_service", use_container_width=True):
                 # Validate fields
                 validation_error = None
                 if not st.session_state.service_reference.strip():
@@ -867,7 +867,7 @@ def show_form():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_delivery_income"):
+            if st.button("Submeter", key="submit_delivery_income", use_container_width=True):
                 # Validate fields
                 validation_error = None
                 if not st.session_state.delivery_income_collaborator.strip():
@@ -1208,7 +1208,7 @@ def show_report_tab():
         submit_button_container = st.container()
         with submit_button_container:
             st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter Relatório", key="submit_report"):
+            if st.button("Submeter Relatório", key="submit_report", use_container_width=True):
                 # Save current report to history with actual data
                 st.session_state.history.append({
                     'number': format_date_range(st.session_state.current_start_date, st.session_state.current_end_date),
