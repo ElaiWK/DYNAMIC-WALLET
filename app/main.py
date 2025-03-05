@@ -234,6 +234,27 @@ st.markdown("""
     .amount-container.negative {
         background-color: #1e1e1e !important;
     }
+
+    /* Corner button for home navigation */
+    .home-button .stButton > button {
+        background: none !important;
+        border: none !important;
+        color: #4CAF50 !important;
+        font-size: 14px !important;
+        padding: 0 !important;
+        width: auto !important;
+        text-decoration: underline !important;
+        text-align: right !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+    }
+
+    .home-button .stButton > button:hover {
+        color: #45a049 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -317,6 +338,13 @@ def navigate_back():
         st.session_state.transaction_type = None
     st.rerun()
 
+def show_home_button():
+    st.markdown('<div class="home-button">', unsafe_allow_html=True)
+    if st.button("🏠 Dynamic Wallet", key="home_button"):
+        st.session_state.page = "main"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
 def show_main_page():
     # Center the title without icon
     st.markdown("""
@@ -362,6 +390,9 @@ def show_main_page():
     """, unsafe_allow_html=True)
 
 def show_categories():
+    # Add home button
+    show_home_button()
+    
     # Back button in categories
     st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar", key="back_button"):
@@ -383,6 +414,9 @@ def show_categories():
         st.markdown('</div>', unsafe_allow_html=True)
 
 def show_form():
+    # Add home button
+    show_home_button()
+    
     # Back button in form
     st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories"):
