@@ -1479,14 +1479,19 @@ def show_admin_tab():
                         expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
                     
                     with col2:
-                        # Add PDF download button
+                        # Add PDF download button with a more elegant design
+                        report_id = f"{selected_user}_{report['number'].replace(' ', '_')}"
                         st.markdown(f"""
                         <div style="margin-top: 8px;">
-                            <a href="#" onclick="alert('Funcionalidade de download em PDF será implementada em breve!');" style="text-decoration: none;">
-                                <span style="font-size: 24px; color: white; background-color: #1E1E1E; padding: 5px 10px; border-radius: 4px;">
-                                    📄
-                                </span>
-                            </a>
+                            <button 
+                                onclick="alert('Relatório {report['number']} para {selected_user} será disponibilizado em breve.');" 
+                                style="background: none; border: none; cursor: pointer; padding: 0;">
+                                <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background-color: rgba(255, 255, 255, 0.1); border-radius: 4px; transition: all 0.3s;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="white"/>
+                                    </svg>
+                                </div>
+                            </button>
                         </div>
                         """, unsafe_allow_html=True)
                     
@@ -1592,25 +1597,8 @@ def show_history_tab():
 
     # Display detailed information for each report
     for report in st.session_state.history:
-        # Create a container for the expander and PDF button
-        col1, col2 = st.columns([0.9, 0.1])
-        
-        with col1:
-            expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
-        
-        with col2:
-            # Add PDF download button
-            st.markdown(f"""
-            <div style="margin-top: 8px;">
-                <a href="#" onclick="alert('Funcionalidade de download em PDF será implementada em breve!');" style="text-decoration: none;">
-                    <span style="font-size: 24px; color: white; background-color: #1E1E1E; padding: 5px 10px; border-radius: 4px;">
-                        📄
-                    </span>
-                </a>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with expander:
+        # Use just the expander without the PDF button in the regular history tab
+        with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
             # Create DataFrame from transactions
             df_transactions = create_transaction_df(report['transactions'])
             
