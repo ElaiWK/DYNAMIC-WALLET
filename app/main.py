@@ -235,7 +235,7 @@ def show_login_page():
                 st.write("Debug - Updated session state:", {k: v for k, v in st.session_state.items() if k not in ['login_password']})
                 
                 # Force rerun to show the main app
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Invalid username or password. Please try again.")
     
@@ -1278,7 +1278,7 @@ def main():
                 
         st.session_state.authenticated = False
         st.session_state.username = None
-        st.experimental_rerun()
+        st.rerun()
     
     # Initialize page state if not already done
     if "page" not in st.session_state:
