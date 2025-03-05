@@ -951,21 +951,21 @@ def main():
                     with st.container():
                         st.markdown(f"""
                         <div style="
-                            background-color: white;
+                            background-color: #1E1E1E;
                             border-left: 4px solid #4CAF50;
                             padding: 1rem;
                             margin: 0.5rem 0;
                             border-radius: 4px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #666;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #333;">{row['Amount']}</span>
+                                <span style="color: #CCCCCC;">{row['Date']}</span>
+                                <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
                             </div>
                             <div style="margin-bottom: 0.5rem;">
-                                <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
+                                <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
                                     {row['Category']}
                                 </span>
                             </div>
-                            <div style="color: #333; margin-top: 0.5rem;">
+                            <div style="color: #FFFFFF; margin-top: 0.5rem;">
                                 {row['Description']}
                             </div>
                         </div>
@@ -978,21 +978,21 @@ def main():
                     with st.container():
                         st.markdown(f"""
                         <div style="
-                            background-color: white;
+                            background-color: #1E1E1E;
                             border-left: 4px solid #ff4b4b;
                             padding: 1rem;
                             margin: 0.5rem 0;
                             border-radius: 4px;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                                <span style="color: #666;">{row['Date']}</span>
-                                <span style="font-weight: 500; color: #333;">{row['Amount']}</span>
+                                <span style="color: #CCCCCC;">{row['Date']}</span>
+                                <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
                             </div>
                             <div style="margin-bottom: 0.5rem;">
-                                <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em;">
+                                <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
                                     {row['Category']}
                                 </span>
                             </div>
-                            <div style="color: #333; margin-top: 0.5rem;">
+                            <div style="color: #FFFFFF; margin-top: 0.5rem;">
                                 {row['Description']}
                             </div>
                         </div>
