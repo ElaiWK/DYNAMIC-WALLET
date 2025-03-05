@@ -173,6 +173,42 @@ def navigate_back():
                 del st.session_state.delivery_amount
             if "delivery_date" in st.session_state:
                 del st.session_state.delivery_date
+        # Reset service form state
+        elif st.session_state.category == IncomeCategory.SERVICE.value:
+            if "service_reference" in st.session_state:
+                del st.session_state.service_reference
+            if "service_amount" in st.session_state:
+                del st.session_state.service_amount
+            if "service_date" in st.session_state:
+                del st.session_state.service_date
+        # Reset HR income form state
+        elif st.session_state.category == IncomeCategory.HR.value:
+            if "hr_income_role" in st.session_state:
+                del st.session_state.hr_income_role
+            if "hr_income_amount" in st.session_state:
+                del st.session_state.hr_income_amount
+            if "hr_income_collaborator" in st.session_state:
+                del st.session_state.hr_income_collaborator
+            if "hr_income_date" in st.session_state:
+                del st.session_state.hr_income_date
+        # Reset purchase income form state
+        elif st.session_state.category == IncomeCategory.PURCHASE.value:
+            if "purchase_income_what" in st.session_state:
+                del st.session_state.purchase_income_what
+            if "purchase_income_amount" in st.session_state:
+                del st.session_state.purchase_income_amount
+            if "purchase_income_justification" in st.session_state:
+                del st.session_state.purchase_income_justification
+            if "purchase_income_date" in st.session_state:
+                del st.session_state.purchase_income_date
+        # Reset delivery income form state
+        elif st.session_state.category == IncomeCategory.DELIVERY.value:
+            if "delivery_income_collaborator" in st.session_state:
+                del st.session_state.delivery_income_collaborator
+            if "delivery_income_amount" in st.session_state:
+                del st.session_state.delivery_income_amount
+            if "delivery_income_date" in st.session_state:
+                del st.session_state.delivery_income_date
         st.session_state.page = "categories"
     elif st.session_state.page == "categories":
         st.session_state.page = "main"
@@ -634,6 +670,385 @@ def show_form():
                     del st.session_state.delivery_collaborator
                     del st.session_state.delivery_amount
                     del st.session_state.delivery_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state.category == IncomeCategory.SERVICE.value:
+        # Initialize session state for service form
+        if "service_reference" not in st.session_state:
+            st.session_state.service_reference = ""
+        if "service_amount" not in st.session_state:
+            st.session_state.service_amount = 0.0
+        if "service_date" not in st.session_state:
+            st.session_state.service_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.service_date,
+            key="service_date_input"
+        )
+        if selected_date != st.session_state.service_date:
+            st.session_state.service_date = selected_date
+            st.rerun()
+        
+        # Reference number field
+        new_reference = st.text_input(
+            "Número do Serviço",
+            value=st.session_state.service_reference,
+            key="service_reference_input"
+        )
+        if new_reference != st.session_state.service_reference:
+            st.session_state.service_reference = new_reference
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.service_amount,
+            key="service_amount_input"
+        )
+        if new_amount != st.session_state.service_amount:
+            st.session_state.service_amount = new_amount
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.service_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_service"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.service_reference.strip():
+                    validation_error = "Por favor, insira o número do serviço"
+                elif st.session_state.service_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"Serviço #{st.session_state.service_reference}"
+                    save_transaction(
+                        st.session_state.service_date,
+                        TransactionType.INCOME.value,
+                        IncomeCategory.SERVICE.value,
+                        description,
+                        st.session_state.service_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.service_reference
+                    del st.session_state.service_amount
+                    del st.session_state.service_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state.category == IncomeCategory.HR.value:
+        # Initialize session state for HR income form
+        if "hr_income_role" not in st.session_state:
+            st.session_state.hr_income_role = ""
+        if "hr_income_amount" not in st.session_state:
+            st.session_state.hr_income_amount = 0.0
+        if "hr_income_collaborator" not in st.session_state:
+            st.session_state.hr_income_collaborator = ""
+        if "hr_income_date" not in st.session_state:
+            st.session_state.hr_income_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.hr_income_date,
+            key="hr_income_date_input"
+        )
+        if selected_date != st.session_state.hr_income_date:
+            st.session_state.hr_income_date = selected_date
+            st.rerun()
+        
+        # Role selection
+        new_role = st.selectbox(
+            "Função",
+            list(HR_RATES.keys()),
+            index=list(HR_RATES.keys()).index(st.session_state.hr_income_role),
+            key="hr_income_role_input"
+        )
+        if new_role != st.session_state.hr_income_role:
+            st.session_state.hr_income_role = new_role
+            st.rerun()
+        
+        # Collaborator name
+        new_collaborator = st.text_input(
+            "Nome do Colaborador",
+            value=st.session_state.hr_income_collaborator,
+            key="hr_income_collaborator_input"
+        )
+        if new_collaborator != st.session_state.hr_income_collaborator:
+            st.session_state.hr_income_collaborator = new_collaborator
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.hr_income_amount,
+            key="hr_income_amount_input"
+        )
+        if new_amount != st.session_state.hr_income_amount:
+            st.session_state.hr_income_amount = new_amount
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.hr_income_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_hr_income"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.hr_income_role:
+                    validation_error = "Por favor, selecione uma função"
+                elif not st.session_state.hr_income_collaborator.strip():
+                    validation_error = "Por favor, insira o nome do colaborador"
+                elif st.session_state.hr_income_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"Receita RH de {st.session_state.hr_income_collaborator} ({st.session_state.hr_income_role})"
+                    save_transaction(
+                        st.session_state.hr_income_date,
+                        TransactionType.INCOME.value,
+                        IncomeCategory.HR.value,
+                        description,
+                        st.session_state.hr_income_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.hr_income_role
+                    del st.session_state.hr_income_amount
+                    del st.session_state.hr_income_collaborator
+                    del st.session_state.hr_income_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state.category == IncomeCategory.PURCHASE.value:
+        # Initialize session state for purchase income form
+        if "purchase_income_what" not in st.session_state:
+            st.session_state.purchase_income_what = ""
+        if "purchase_income_amount" not in st.session_state:
+            st.session_state.purchase_income_amount = 0.0
+        if "purchase_income_justification" not in st.session_state:
+            st.session_state.purchase_income_justification = ""
+        if "purchase_income_date" not in st.session_state:
+            st.session_state.purchase_income_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.purchase_income_date,
+            key="purchase_income_date_input"
+        )
+        if selected_date != st.session_state.purchase_income_date:
+            st.session_state.purchase_income_date = selected_date
+            st.rerun()
+        
+        # What field
+        new_what = st.text_input(
+            "O quê?",
+            value=st.session_state.purchase_income_what,
+            key="purchase_income_what_input"
+        )
+        if new_what != st.session_state.purchase_income_what:
+            st.session_state.purchase_income_what = new_what
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.purchase_income_amount,
+            key="purchase_income_amount_input"
+        )
+        if new_amount != st.session_state.purchase_income_amount:
+            st.session_state.purchase_income_amount = new_amount
+            st.rerun()
+        
+        # Justification field
+        new_justification = st.text_input(
+            "Justificação",
+            value=st.session_state.purchase_income_justification,
+            key="purchase_income_justification_input"
+        )
+        if new_justification != st.session_state.purchase_income_justification:
+            st.session_state.purchase_income_justification = new_justification
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.purchase_income_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_purchase_income"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.purchase_income_what.strip():
+                    validation_error = "Por favor, preencha o campo 'O quê?'"
+                elif st.session_state.purchase_income_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                elif not st.session_state.purchase_income_justification.strip():
+                    validation_error = "Por favor, preencha a justificação"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"{st.session_state.purchase_income_what} - {st.session_state.purchase_income_justification}"
+                    save_transaction(
+                        st.session_state.purchase_income_date,
+                        TransactionType.INCOME.value,
+                        IncomeCategory.PURCHASE.value,
+                        description,
+                        st.session_state.purchase_income_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.purchase_income_what
+                    del st.session_state.purchase_income_amount
+                    del st.session_state.purchase_income_justification
+                    del st.session_state.purchase_income_date
+                    st.session_state.page = "main"
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    elif st.session_state.category == IncomeCategory.DELIVERY.value:
+        # Initialize session state for delivery income form
+        if "delivery_income_collaborator" not in st.session_state:
+            st.session_state.delivery_income_collaborator = ""
+        if "delivery_income_amount" not in st.session_state:
+            st.session_state.delivery_income_amount = 0.0
+        if "delivery_income_date" not in st.session_state:
+            st.session_state.delivery_income_date = datetime.now().date()
+        
+        # Date input at the top
+        selected_date = st.date_input(
+            "Data",
+            value=st.session_state.delivery_income_date,
+            key="delivery_income_date_input"
+        )
+        if selected_date != st.session_state.delivery_income_date:
+            st.session_state.delivery_income_date = selected_date
+            st.rerun()
+        
+        # Collaborator name field
+        new_collaborator = st.text_input(
+            "Nome do Colaborador",
+            value=st.session_state.delivery_income_collaborator,
+            key="delivery_income_collaborator_input"
+        )
+        if new_collaborator != st.session_state.delivery_income_collaborator:
+            st.session_state.delivery_income_collaborator = new_collaborator
+            st.rerun()
+        
+        # Amount field
+        new_amount = st.number_input(
+            "Valor (€)",
+            min_value=0.0,
+            step=0.5,
+            value=st.session_state.delivery_income_amount,
+            key="delivery_income_amount_input"
+        )
+        if new_amount != st.session_state.delivery_income_amount:
+            st.session_state.delivery_income_amount = new_amount
+            st.rerun()
+        
+        # Add spacing
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Display amount
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="color: #4CAF50; font-size: 32px; text-align: center; margin: 0;">{format_currency(st.session_state.delivery_income_amount)}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.write("")  # Add space before submit button
+        
+        # Add submit button
+        submit_button_container = st.container()
+        with submit_button_container:
+            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
+            if st.button("Submeter", key="submit_delivery_income"):
+                # Validate fields
+                validation_error = None
+                if not st.session_state.delivery_income_collaborator.strip():
+                    validation_error = "Por favor, insira o nome do colaborador"
+                elif st.session_state.delivery_income_amount <= 0:
+                    validation_error = "Por favor, insira um valor válido"
+                
+                if validation_error:
+                    st.error(validation_error)
+                else:
+                    description = f"Recebido de {st.session_state.delivery_income_collaborator}"
+                    save_transaction(
+                        st.session_state.delivery_income_date,
+                        TransactionType.INCOME.value,
+                        IncomeCategory.DELIVERY.value,
+                        description,
+                        st.session_state.delivery_income_amount
+                    )
+                    st.success("Transação registrada com sucesso!")
+                    # Reset form state
+                    del st.session_state.delivery_income_collaborator
+                    del st.session_state.delivery_income_amount
+                    del st.session_state.delivery_income_date
                     st.session_state.page = "main"
                     st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)

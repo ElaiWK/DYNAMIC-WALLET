@@ -15,8 +15,9 @@ class ExpenseCategory(Enum):
 # Income Categories
 class IncomeCategory(Enum):
     SERVICE = "Serviço"
-    COLLABORATOR = "Recebi de um colaborador"
-    OTHER = "Outro"
+    HR = "Recursos Humanos"
+    PURCHASE = "Compra"
+    DELIVERY = "Recebi"
 
 # Meal Types
 class MealType(Enum):
