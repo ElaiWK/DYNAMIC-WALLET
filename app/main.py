@@ -274,7 +274,7 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    st.markdown('<div class="back-container">', unsafe_allow_html=True)
+    st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar", key="back_button"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -295,7 +295,7 @@ def show_categories():
 
 def show_form():
     # Back button
-    st.markdown('<div class="back-container">', unsafe_allow_html=True)
+    st.markdown('<div class="corner-button">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories"):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
