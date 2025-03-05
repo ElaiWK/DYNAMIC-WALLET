@@ -8,7 +8,7 @@ import time
 import shutil
 import yaml
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import base64
 from io import BytesIO
 import matplotlib.pyplot as plt
@@ -19,6 +19,7 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 import traceback
+import hmac
 
 from constants.config import (
     TransactionType,
@@ -1194,21 +1195,8 @@ def save_user_transactions(username, transactions):
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
     
-    # Converter valores numpy.int64 para int padrão do Python
-    def convert_numpy_types(obj):
-        if isinstance(obj, dict):
-            return {k: convert_numpy_types(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_numpy_types(item) for item in obj]
-        elif isinstance(obj, np.int64):
-            return int(obj)
-        elif isinstance(obj, np.float64):
-            return float(obj)
-        else:
-            return obj
-    
     # Converter todos os valores numpy antes da serialização
-    transactions_converted = convert_numpy_types(transactions)
+    transactions_converted = convert_to_serializable(transactions)
     
     with open(transactions_file, "w") as f:
         json.dump(transactions_converted, f)
@@ -1221,18 +1209,17 @@ def save_user_dates(username, start_date, end_date, report_counter=1):
     user_dir = get_user_dir(username)
     dates_file = os.path.join(user_dir, "dates.json")
     
-    # Convert dates to string format
-    start_date_str = start_date.strftime('%Y-%m-%d') if hasattr(start_date, 'strftime') else start_date
-    end_date_str = end_date.strftime('%Y-%m-%d') if hasattr(end_date, 'strftime') else end_date
-    
     dates_data = {
-        "start_date": start_date_str,
-        "end_date": end_date_str,
+        "start_date": start_date,
+        "end_date": end_date,
         "report_counter": report_counter
     }
     
+    # Converter todos os valores para tipos serializáveis
+    dates_data_converted = convert_to_serializable(dates_data)
+    
     with open(dates_file, "w") as f:
-        json.dump(dates_data, f)
+        json.dump(dates_data_converted, f)
 
 def load_user_dates(username):
     """Load user date range and report counter from a JSON file"""
@@ -1242,17 +1229,40 @@ def load_user_dates(username):
     user_dir = get_user_dir(username)
     dates_file = os.path.join(user_dir, "dates.json")
     
-    dates_data = safe_load_json(dates_file, "corrupted_dates", None)
-    
+    dates_data = safe_load_json(dates_file, "corrupted_dates")
     if dates_data:
         # Convert string dates back to datetime objects
         try:
-            start_date = datetime.strptime(dates_data["start_date"], '%Y-%m-%d').date()
-            end_date = datetime.strptime(dates_data["end_date"], '%Y-%m-%d').date()
-            report_counter = dates_data.get("report_counter", 1)
+            # Tenta diferentes formatos de data
+            start_date_str = dates_data["start_date"]
+            end_date_str = dates_data["end_date"]
+            
+            # Tenta primeiro o formato padrão
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                # Se falhar, verifica se já é um objeto datetime
+                if isinstance(start_date_str, (datetime, date)):
+                    start_date = start_date_str
+                else:
+                    print(f"Formato de data inválido para start_date: {start_date_str}")
+                    start_date = datetime.now().date()
+            
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                # Se falhar, verifica se já é um objeto datetime
+                if isinstance(end_date_str, (datetime, date)):
+                    end_date = end_date_str
+                else:
+                    print(f"Formato de data inválido para end_date: {end_date_str}")
+                    end_date = datetime.now().date() + timedelta(days=7)
+            
+            report_counter = int(dates_data.get("report_counter", 1))
             return start_date, end_date, report_counter
         except Exception as e:
             print(f"Error converting dates: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
     
     return None
 
@@ -1262,11 +1272,14 @@ def safe_load_json(file_path, backup_prefix, default_value=None):
         default_value = []
         
     if not os.path.exists(file_path):
+        print(f"Arquivo não encontrado: {file_path}")
         return default_value
         
     try:
         with open(file_path, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            print(f"Arquivo carregado com sucesso: {file_path}")
+            return data
     except json.JSONDecodeError as e:
         # Log the error
         print(f"Erro ao carregar arquivo JSON {file_path}: {str(e)}")
@@ -1302,7 +1315,14 @@ def load_user_transactions(username):
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
     
-    return safe_load_json(transactions_file, "corrupted_transactions")
+    transactions = safe_load_json(transactions_file, "corrupted_transactions")
+    
+    # Garantir que as datas estão no formato correto
+    for transaction in transactions:
+        if "date" in transaction and not isinstance(transaction["date"], str):
+            transaction["date"] = convert_to_serializable(transaction["date"])
+    
+    return transactions
 
 def load_user_history(username):
     """Load user history from a JSON file"""
@@ -1312,7 +1332,16 @@ def load_user_history(username):
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
     
-    return safe_load_json(history_file, "corrupted_history")
+    history = safe_load_json(history_file, "corrupted_history")
+    
+    # Garantir que as datas estão no formato correto
+    for report in history:
+        if "start_date" in report and not isinstance(report["start_date"], str):
+            report["start_date"] = convert_to_serializable(report["start_date"])
+        if "end_date" in report and not isinstance(report["end_date"], str):
+            report["end_date"] = convert_to_serializable(report["end_date"])
+    
+    return history
 
 def save_user_history(username, history):
     """Save user history to a JSON file"""
@@ -1322,21 +1351,8 @@ def save_user_history(username, history):
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
     
-    # Converter valores numpy.int64 para int padrão do Python
-    def convert_numpy_types(obj):
-        if isinstance(obj, dict):
-            return {k: convert_numpy_types(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_numpy_types(item) for item in obj]
-        elif isinstance(obj, np.int64):
-            return int(obj)
-        elif isinstance(obj, np.float64):
-            return float(obj)
-        else:
-            return obj
-    
     # Converter todos os valores numpy antes da serialização
-    history_converted = convert_numpy_types(history)
+    history_converted = convert_to_serializable(history)
     
     with open(history_file, "w") as f:
         json.dump(history_converted, f)
@@ -1369,11 +1385,11 @@ def generate_pdf_report(username, report_data):
     elements.append(Paragraph("Resumo", subtitle_style))
     summary_data = [
         ["Descrição", "Valor"],
-        ["Total Despesas", f"{format_currency(report_data['summary']['total_expenses'])}"],
-        ["Total Refeições", f"{format_currency(report_data['summary']['total_meals'])}"],
-        ["Total Transportes", f"{format_currency(report_data['summary']['total_transport'])}"],
-        ["Total Outros", f"{format_currency(report_data['summary']['total_other'])}"],
-        ["Saldo Final", f"{format_currency(report_data['summary']['net_amount'])}"]
+        ["Total Despesas", f"{format_currency(report_data['summary'].get('total_expenses', report_data['summary'].get('total_expense', 0)))}"],
+        ["Total Refeições", f"{format_currency(report_data['summary'].get('total_meals', 0))}"],
+        ["Total Transportes", f"{format_currency(report_data['summary'].get('total_transport', 0))}"],
+        ["Total Outros", f"{format_currency(report_data['summary'].get('total_other', 0))}"],
+        ["Saldo Final", f"{format_currency(report_data['summary'].get('net_amount', 0))}"]
     ]
     
     summary_table = Table(summary_data, colWidths=[300, 100])
@@ -1449,8 +1465,12 @@ def auto_save_user_data():
         try:
             if hasattr(st.session_state, "transactions"):
                 save_user_transactions(st.session_state.username, st.session_state.transactions)
+                print(f"Transações salvas para o usuário {st.session_state.username}")
+            
             if hasattr(st.session_state, "history"):
                 save_user_history(st.session_state.username, st.session_state.history)
+                print(f"Histórico salvo para o usuário {st.session_state.username}")
+            
             # Save current date range and report counter
             if hasattr(st.session_state, "current_start_date") and hasattr(st.session_state, "current_end_date"):
                 save_user_dates(
@@ -1459,24 +1479,31 @@ def auto_save_user_data():
                     st.session_state.current_end_date,
                     st.session_state.get("report_counter", 1)
                 )
+                print(f"Datas e contador de relatórios salvos para o usuário {st.session_state.username}")
         except Exception as e:
             print(f"Error in auto-save: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
 
 def main():
     # Debug: Show current authentication state
-    st.sidebar.write("Debug - Auth state:", st.session_state.get("authenticated", False))
-    st.sidebar.write("Debug - Username:", st.session_state.get("username", "None"))
+    # st.write(f"Debug - Authenticated: {st.session_state.get('authenticated', False)}")
+    # st.write(f"Debug - Username: {st.session_state.get('username', 'None')}")
     
-    # Initialize session state if not already done
+    # Initialize session state variables if they don't exist
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
-    
     if "username" not in st.session_state:
         st.session_state.username = None
+    if "page" not in st.session_state:
+        st.session_state.page = "login"
+    if "first_load" not in st.session_state:
+        st.session_state.first_load = True
+        
+    # Debug: Print session state keys
+    print(f"Session state keys: {list(st.session_state.keys())}")
     
-    # Show login page if not authenticated
+    # If not authenticated, show login page
     if not st.session_state.authenticated:
-        st.sidebar.warning("Not authenticated - showing login page")
         show_login_page()
         return
     
@@ -1906,9 +1933,9 @@ def show_history_tab():
             """, unsafe_allow_html=True)
 
 def get_period_summary(df):
-    total_income = df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum()
-    total_expense = df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum()
-    net_amount = total_income - total_expense
+    total_income = float(df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum())
+    total_expense = float(df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum())
+    net_amount = float(total_income - total_expense)
     
     return {
         'total_income': total_income,
@@ -2076,9 +2103,12 @@ def show_report_tab():
                     "period": f"{st.session_state.current_start_date.strftime('%Y-%m-%d')} a {st.session_state.current_end_date.strftime('%Y-%m-%d')}",
                     "transactions": df.to_dict("records"),
                     "summary": summary,
-                    'start_date': st.session_state.current_start_date.strftime('%Y-%m-%d') if hasattr(st.session_state.current_start_date, 'strftime') else st.session_state.current_start_date,
-                    'end_date': st.session_state.current_end_date.strftime('%Y-%m-%d') if hasattr(st.session_state.current_end_date, 'strftime') else st.session_state.current_end_date
+                    'start_date': st.session_state.current_start_date,
+                    'end_date': st.session_state.current_end_date
                 }
+                
+                # Converter para tipos serializáveis
+                report = convert_to_serializable(report)
                 
                 # Add to history
                 if "history" not in st.session_state:
@@ -2087,6 +2117,17 @@ def show_report_tab():
                 
                 # Save history to file
                 save_user_history(st.session_state.username, st.session_state.history)
+                
+                # Remover transações do período atual
+                if st.session_state.transactions:
+                    # Filtrar transações para manter apenas as que não estão no período atual
+                    st.session_state.transactions = [
+                        t for t in st.session_state.transactions 
+                        if not (datetime.strptime(t["date"], "%Y-%m-%d").date() >= st.session_state.current_start_date 
+                               and datetime.strptime(t["date"], "%Y-%m-%d").date() <= st.session_state.current_end_date)
+                    ]
+                    # Salvar transações atualizadas
+                    save_user_transactions(st.session_state.username, st.session_state.transactions)
                 
                 # Update to next week's dates
                 next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
@@ -2106,8 +2147,35 @@ def show_report_tab():
                 
                 # Mostrar mensagem de sucesso
                 st.success("Relatório submetido com sucesso!")
+                
+                # Forçar recarregamento da página para atualizar as abas
+                st.rerun()
     else:
         st.info("Não há transações registradas para o período atual.")
+
+def convert_to_serializable(obj):
+    """
+    Converte tipos complexos (como NumPy, Pandas, etc.) para tipos Python nativos serializáveis.
+    Esta função deve ser usada antes de serializar qualquer objeto para JSON.
+    """
+    if isinstance(obj, dict):
+        return {k: convert_to_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_serializable(item) for item in obj]
+    elif isinstance(obj, np.int64):
+        return int(obj)
+    elif isinstance(obj, np.float64):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return convert_to_serializable(obj.tolist())
+    elif isinstance(obj, pd.DataFrame):
+        return convert_to_serializable(obj.to_dict('records'))
+    elif isinstance(obj, pd.Series):
+        return convert_to_serializable(obj.to_dict())
+    elif hasattr(obj, 'strftime'):  # Para objetos datetime
+        return obj.strftime('%Y-%m-%d')
+    else:
+        return obj
 
 if __name__ == "__main__":
     try:
