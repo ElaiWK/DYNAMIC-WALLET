@@ -143,7 +143,7 @@ st.markdown("""
         width: auto !important;
     }
     /* Back button specific styling */
-    button[kind="secondary"] {
+    div.stButton.back-button > button[kind="secondary"] {
         background: none !important;
         border: none !important;
         padding: 0 !important;
@@ -158,7 +158,7 @@ st.markdown("""
         min-height: 0 !important;
         line-height: normal !important;
     }
-    button[kind="secondary"]:hover {
+    div.stButton.back-button > button[kind="secondary"]:hover {
         color: #2b2b2b !important;
         background: none !important;
         border: none !important;
@@ -292,7 +292,7 @@ def show_main_page():
 
 def show_categories():
     # Back button
-    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    st.markdown('<div class="stButton back-button" style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
     if st.button("← Voltar", key="back_button", type="secondary", use_container_width=False):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
@@ -311,7 +311,7 @@ def show_categories():
 
 def show_form():
     # Back button
-    st.markdown('<div style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
+    st.markdown('<div class="stButton back-button" style="text-align: right; margin-bottom: 20px;">', unsafe_allow_html=True)
     if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary", use_container_width=False):
         navigate_back()
     st.markdown('</div>', unsafe_allow_html=True)
