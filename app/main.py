@@ -926,6 +926,10 @@ def main():
             income_df["Amount"] = income_df["Amount"].apply(format_currency)
             expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
             
+            # Format dates to dd/MM
+            income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
+            expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+            
             # Display income transactions if they exist
             if not income_df.empty:
                 st.subheader("Entradas")
