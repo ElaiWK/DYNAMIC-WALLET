@@ -136,6 +136,33 @@ st.markdown("""
         border-radius: 10px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .link-button {
+        background: none;
+        color: #4a4a4a;
+        font-size: 14px;
+        text-decoration: underline;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-align: right;
+        display: inline;
+        margin: 0;
+        font-weight: 400;
+    }
+    .link-button:hover {
+        color: #2b2b2b;
+        background: none !important;
+        border: none !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    div.stButton.link-container {
+        text-align: right;
+        margin-bottom: 20px;
+    }
+    div.stButton.link-container > button {
+        width: auto;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -262,19 +289,11 @@ def show_main_page():
         ), unsafe_allow_html=True)
 
 def show_categories():
-    # Back button as a link
-    st.markdown("""
-        <div style="text-align: right; margin-bottom: 20px;">
-            <a href="#" onclick="window.streamlit.setComponentValue('back_clicked', true); return false;" 
-               style="color: #4a4a4a; font-size: 14px; text-decoration: underline; cursor: pointer;">
-                ← Voltar
-            </a>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if st.session_state.get('back_clicked', False):
-        st.session_state.back_clicked = False
+    # Back button
+    st.markdown('<div class="stButton link-container">', unsafe_allow_html=True)
+    if st.button("← Voltar", key="back_button", type="secondary"):
         navigate_back()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.subheader("Selecione a Categoria")
     
@@ -289,19 +308,11 @@ def show_categories():
             navigate_to_form(category)
 
 def show_form():
-    # Back button as a link
-    st.markdown("""
-        <div style="text-align: right; margin-bottom: 20px;">
-            <a href="#" onclick="window.streamlit.setComponentValue('back_clicked', true); return false;" 
-               style="color: #4a4a4a; font-size: 14px; text-decoration: underline; cursor: pointer;">
-                ← Voltar para Categorias
-            </a>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if st.session_state.get('back_clicked', False):
-        st.session_state.back_clicked = False
+    # Back button
+    st.markdown('<div class="stButton link-container">', unsafe_allow_html=True)
+    if st.button("← Voltar para Categorias", key="back_to_categories", type="secondary"):
         navigate_back()
+    st.markdown('</div>', unsafe_allow_html=True)
     
     st.subheader(f"{'Saída' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Entrada'} - {st.session_state.category}")
     
