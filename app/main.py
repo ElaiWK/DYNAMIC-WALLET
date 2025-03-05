@@ -47,19 +47,56 @@ if 'user_data_loaded' not in st.session_state:
 # User authentication functions
 def get_users_file_path():
     """Get the path to the users.json file"""
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    # Get the absolute path to the data directory
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+    
+    # Debug information
+    st.write(f"Debug - Data directory path: {data_dir}")
+    st.write(f"Debug - Data directory exists: {os.path.exists(data_dir)}")
+    
+    # Create the data directory if it doesn't exist
     if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-    return os.path.join(data_dir, "users.json")
+        try:
+            os.makedirs(data_dir)
+            st.write(f"Debug - Created data directory: {data_dir}")
+        except Exception as e:
+            st.write(f"Debug - Error creating data directory: {str(e)}")
+            # Fallback to current directory if we can't create the data directory
+            data_dir = "."
+            st.write(f"Debug - Using fallback data directory: {data_dir}")
+    
+    users_file = os.path.join(data_dir, "users.json")
+    st.write(f"Debug - Users file path: {users_file}")
+    st.write(f"Debug - Users file exists: {os.path.exists(users_file)}")
+    
+    return users_file
 
 def load_users():
     """Load users from the JSON file"""
-    users_file = get_users_file_path()
-    if os.path.exists(users_file):
-        with open(users_file, "r") as f:
-            return json.load(f)
-    # If file doesn't exist, initialize with default users
-    return initialize_default_users()
+    try:
+        users_file = get_users_file_path()
+        if os.path.exists(users_file):
+            try:
+                with open(users_file, "r") as f:
+                    users = json.load(f)
+                st.write(f"Debug - Successfully loaded {len(users)} users")
+                return users
+            except Exception as e:
+                st.write(f"Debug - Error loading users file: {str(e)}")
+        
+        # If file doesn't exist or there was an error, initialize with default users
+        st.write("Debug - Initializing default users")
+        return initialize_default_users()
+    except Exception as e:
+        st.write(f"Debug - Critical error in load_users: {str(e)}")
+        # Return a minimal set of users as a last resort
+        return {
+            "admin": {
+                "password": hash_password("admin123"),
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "is_admin": True
+            }
+        }
 
 def initialize_default_users():
     """Initialize the system with default users if none exist"""
@@ -91,9 +128,19 @@ def initialize_default_users():
 
 def save_users(users):
     """Save users to the JSON file"""
-    users_file = get_users_file_path()
-    with open(users_file, "w") as f:
-        json.dump(users, f)
+    try:
+        users_file = get_users_file_path()
+        try:
+            with open(users_file, "w") as f:
+                json.dump(users, f, indent=4)
+            st.write(f"Debug - Successfully saved {len(users)} users")
+            return True
+        except Exception as e:
+            st.write(f"Debug - Error saving users file: {str(e)}")
+            return False
+    except Exception as e:
+        st.write(f"Debug - Critical error in save_users: {str(e)}")
+        return False
 
 def hash_password(password):
     """Hash a password for storing"""
@@ -1623,14 +1670,32 @@ def show_report_tab():
         st.info("Não existem transações registradas.")
 
 if __name__ == "__main__":
-    # Debug information at startup
-    st.write("Debug - Application starting")
-    st.write("Debug - Session state at startup:", st.session_state)
+    # Debug information about environment
+    st.write("Debug - Running in directory:", os.getcwd())
+    st.write("Debug - Files in current directory:", os.listdir())
     
-    # Always check authentication state
-    if not st.session_state.get("authenticated", False):
-        st.write("Debug - Not authenticated, resetting state")
+    # Create data directory if it doesn't exist
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
+    if not os.path.exists(data_dir):
+        try:
+            os.makedirs(data_dir)
+            st.write(f"Debug - Created data directory: {data_dir}")
+        except Exception as e:
+            st.write(f"Debug - Error creating data directory: {str(e)}")
+    
+    # Always reset authentication state on first load
+    if "first_load" not in st.session_state:
+        # Reset authentication state completely
+        for key in list(st.session_state.keys()):
+            if key != "first_load":
+                del st.session_state[key]
+        
         st.session_state.authenticated = False
         st.session_state.username = None
+        st.session_state.user_data_loaded = False
+        st.session_state.first_load = True
+        
+        st.write("Debug - Reset session state on first load")
     
+    # Run the main application
     main() 
