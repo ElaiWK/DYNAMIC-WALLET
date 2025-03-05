@@ -266,7 +266,7 @@ def show_categories():
     st.markdown("""
         <div style="text-align: right; margin-bottom: 20px;">
             <a href="#" onclick="window.streamlit.setComponentValue('back_clicked', true); return false;" 
-               style="color: #6c757d; font-size: 12px; text-decoration: underline; cursor: pointer;">
+               style="color: #4a4a4a; font-size: 14px; text-decoration: underline; cursor: pointer;">
                 ← Voltar
             </a>
         </div>
@@ -293,7 +293,7 @@ def show_form():
     st.markdown("""
         <div style="text-align: right; margin-bottom: 20px;">
             <a href="#" onclick="window.streamlit.setComponentValue('back_clicked', true); return false;" 
-               style="color: #6c757d; font-size: 12px; text-decoration: underline; cursor: pointer;">
+               style="color: #4a4a4a; font-size: 14px; text-decoration: underline; cursor: pointer;">
                 ← Voltar para Categorias
             </a>
         </div>
