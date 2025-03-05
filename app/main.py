@@ -938,7 +938,13 @@ def main():
                 st.dataframe(
                     income_df.drop("Type", axis=1),  # Remove Type column
                     hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
+                    column_config={
+                        "Date": {"width": 100},
+                        "Category": {"width": 120},
+                        "Description": {"width": 400},
+                        "Amount": {"width": 100}
+                    }
                 )
             
             # Display expense transactions if they exist
@@ -947,7 +953,13 @@ def main():
                 st.dataframe(
                     expense_df.drop("Type", axis=1),  # Remove Type column
                     hide_index=True,
-                    use_container_width=True
+                    use_container_width=True,
+                    column_config={
+                        "Date": {"width": 100},
+                        "Category": {"width": 120},
+                        "Description": {"width": 400},
+                        "Amount": {"width": 100}
+                    }
                 )
             
             # Calculate summary statistics
