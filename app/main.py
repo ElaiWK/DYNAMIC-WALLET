@@ -110,25 +110,25 @@ st.markdown("""
     }
     div.back-button {
         text-align: right;
-        margin-bottom: 20px;
-    }
-    div.back-button > button {
-        background-color: transparent !important;
-        color: #6c757d;
+        margin: 0;
         padding: 0;
-        text-decoration: underline;
+    }
+    div.back-button > button:not(.streamlit-button) {
+        all: unset;
+        color: #6c757d;
         font-size: 12px;
-        border: none;
+        text-decoration: underline;
+        cursor: pointer;
+        padding: 0;
         margin: 0;
         display: inline;
         width: auto !important;
+        background-color: transparent !important;
+        border: none;
         transition: color 0.2s;
     }
     div.back-button > button:hover {
-        background-color: transparent !important;
         color: #5a6268;
-        transform: none;
-        box-shadow: none;
     }
     .form-container {
         background-color: white;
