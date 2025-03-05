@@ -115,50 +115,29 @@ st.markdown("""
     }
     div.back-button > button:not(.streamlit-button) {
         all: unset;
-        color: #6c757d;
-        font-size: 12px;
-        text-decoration: underline;
-        cursor: pointer;
-        padding: 0;
-        margin: 0;
-        display: inline;
+        color: #4a4a4a !important;
+        font-size: 14px !important;
+        text-decoration: underline !important;
+        cursor: pointer !important;
+        background: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
         width: auto !important;
-        background-color: transparent !important;
-        border: none;
-        transition: color 0.2s;
+        box-shadow: none !important;
+        display: inline !important;
+        transform: none !important;
     }
     div.back-button > button:hover {
-        color: #5a6268;
-    }
-    .form-container {
-        background-color: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .link-button {
-        background: none;
-        color: #4a4a4a;
-        font-size: 14px;
-        text-decoration: underline;
-        border: none;
-        padding: 0;
-        cursor: pointer;
-        text-align: right;
-        display: inline;
-        margin: 0;
-        font-weight: 400;
-    }
-    .link-button:hover {
-        color: #2b2b2b;
+        color: #2b2b2b !important;
         background: none !important;
         border: none !important;
         transform: none !important;
         box-shadow: none !important;
     }
     div.stButton.link-container {
-        text-align: right;
-        margin-bottom: 20px;
+        text-align: right !important;
+        margin-bottom: 20px !important;
     }
     div.stButton.link-container > button {
         width: auto;
