@@ -33,99 +33,74 @@ st.set_page_config(
 st.markdown("""
 <style>
     /* Main buttons (green) */
-    div.stButton > button:not(.back-container button):not(.category-button button) {
+    div.stButton > button {
         background-color: #4CAF50 !important;
         border: none !important;
         color: white !important;
-        padding: 24px 48px !important;
+        padding: 15px 30px !important;
         text-align: center !important;
         text-decoration: none !important;
-        display: block !important;
-        font-size: 20px !important;
+        display: inline-block !important;
+        font-size: 16px !important;
         margin: 4px 2px !important;
         cursor: pointer !important;
-        border-radius: 12px !important;
-        width: 100% !important;
+        border-radius: 8px !important;
+        width: auto !important;
         transition: all 0.3s !important;
-        min-height: unset !important;
-        line-height: normal !important;
+        line-height: 1.5 !important;
+        height: auto !important;
     }
-    div.stButton > button:not(.back-container button):not(.category-button button):hover {
+
+    div.stButton > button:hover {
         background-color: #45a049 !important;
         transform: translateY(-2px) !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
-    
-    /* Category buttons (white) */
-    div.category-button > button {
-        background-color: #ffffff !important;
-        border: 2px solid #e0e0e0 !important;
-        color: #333333 !important;
-        padding: 20px !important;
-        text-align: center !important;
-        text-decoration: none !important;
-        display: block !important;
-        font-size: 18px !important;
-        margin: 10px 0 !important;
-        cursor: pointer !important;
-        border-radius: 8px !important;
-        transition: all 0.3s !important;
-        width: 100% !important;
-        min-height: unset !important;
-        line-height: normal !important;
-    }
-    div.category-button > button:hover {
-        border-color: #4CAF50 !important;
-        transform: translateX(5px) !important;
-    }
-    
-    /* Back button styling */
+
+    /* Back button specific styling */
     div.back-container {
         text-align: right !important;
         margin-bottom: 20px !important;
     }
+
     div.back-container > div.stButton > button {
-        all: unset !important;
-        color: #4a4a4a !important;
-        font-size: 14px !important;
-        text-decoration: underline !important;
-        cursor: pointer !important;
-        display: inline !important;
         background: none !important;
         border: none !important;
+        color: #4a4a4a !important;
         padding: 0 !important;
-        margin: 0 !important;
-        min-height: unset !important;
-        line-height: normal !important;
+        font-size: 14px !important;
+        text-decoration: underline !important;
         width: auto !important;
+        min-width: 0 !important;
+        display: inline !important;
     }
+
     div.back-container > div.stButton > button:hover {
         color: #2b2b2b !important;
+        background: none !important;
+        transform: none !important;
+        box-shadow: none !important;
     }
-    
-    /* Submit buttons (red) */
-    div.meal-submit-button > button {
-        background-color: #ff4b4b !important;
-        border: none !important;
-        color: white !important;
-        padding: 24px 48px !important;
-        text-align: center !important;
-        text-decoration: none !important;
-        display: block !important;
-        font-size: 20px !important;
-        margin: 4px 2px !important;
-        cursor: pointer !important;
-        border-radius: 12px !important;
+
+    /* Category buttons */
+    div.category-button > div.stButton > button {
         width: 100% !important;
-        transition: all 0.3s !important;
-        min-height: unset !important;
-        line-height: normal !important;
+        margin: 8px 0 !important;
+        padding: 20px !important;
+        font-size: 18px !important;
     }
-    div.meal-submit-button > button:hover {
+
+    /* Submit button (red) */
+    div.meal-submit-button > div.stButton > button {
+        background-color: #ff4b4b !important;
+        width: 100% !important;
+    }
+
+    div.meal-submit-button > div.stButton > button:hover {
         background-color: #e64444 !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
     }
+
+    /* Balance container styling */
     .balance-container {
         padding: 15px;
         border-radius: 10px;
