@@ -137,6 +137,16 @@ def navigate_to_form(category):
 
 def navigate_back():
     if st.session_state.page == "form":
+        # Reset meal form state if coming from meal expense form
+        if st.session_state.category == ExpenseCategory.MEAL.value:
+            if "meal_total_amount" in st.session_state:
+                del st.session_state.meal_total_amount
+            if "meal_num_people" in st.session_state:
+                del st.session_state.meal_num_people
+            if "collaborator_names" in st.session_state:
+                del st.session_state.collaborator_names
+            if "meal_date" in st.session_state:
+                del st.session_state.meal_date
         st.session_state.page = "categories"
     elif st.session_state.page == "categories":
         st.session_state.page = "main"
