@@ -877,6 +877,11 @@ def main():
     tab1, tab2 = st.tabs(["Registar", "Relatório"])
     
     with tab1:
+        # Reset to main page when Registar tab is selected
+        if tab1:
+            st.session_state.page = "main"
+            st.session_state.transaction_type = None
+        
         if st.session_state.page == "main":
             show_main_page()
         elif st.session_state.page == "categories":
