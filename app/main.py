@@ -669,17 +669,23 @@ def format_date_range(start_date, end_date):
     # Convert string dates to datetime objects if needed
     if isinstance(start_date, str):
         try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
         except ValueError:
             # Try alternative format
-            start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            except ValueError:
+                print(f"DEBUG - Could not parse start_date: {start_date}")
     
     if isinstance(end_date, str):
         try:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
         except ValueError:
             # Try alternative format
-            end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+            try:
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                print(f"DEBUG - Could not parse end_date: {end_date}")
     
     return f"De {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
 
@@ -812,802 +818,118 @@ def navigate_back():
     st.rerun()
 
 def show_home_button():
-    st.markdown('<div class="home-button">', unsafe_allow_html=True)
-    if st.button("🏠 Dynamic Wallet", key="home_button"):
+    """Show a home button for navigation back to the main page"""
+    if st.button("Voltar para Início", key="home_button"):
         st.session_state.page = "main"
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def show_main_page():
-    """Show the main page with navigation sidebar"""
+    """Show the main page with horizontal navigation tabs"""
     # Debug message
     print("DEBUG - show_main_page function called")
     
-    # Add sidebar for navigation
-    with st.sidebar:
-        st.title("Navegação")
+    # Create horizontal navigation tabs at the top
+    st.markdown("""
+    <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
+    """, unsafe_allow_html=True)
+    
+    # Create tabs
+    tab1, tab2, tab3, tab4 = st.tabs(["Início", "Histórico", "Relatório", "Admin" if st.session_state.is_admin else ""])
+    
+    with tab1:
+        # Main page content
+        st.markdown(
+            f"""
+            <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
+                {format_date_range(st.session_state.start_date, st.session_state.end_date)}
+            </div>
+            <style>
+            .amount-title {{
+                color: #FFFFFF;
+                text-align: center;
+                font-size: 16px;
+                margin-bottom: 10px;
+            }}
+            .amount-container {{
+                background-color: #262730;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 10px 0;
+                text-align: center;
+            }}
+            .amount-container .value {{
+                color: #FFFFFF;
+                font-size: 24px;
+                font-weight: 500;
+            }}
+            </style>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # Add logout button at the top right
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col3:
+            if st.button("Sair", key="logout_button"):
+                # Reset session state
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                
+                # Set default values
+                st.session_state.authenticated = False
+                st.session_state.page = "login"
+                st.rerun()
         
         # User info
         st.write(f"Logado como: **{st.session_state.username}**")
         
-        # Navigation tabs
-        if st.button("Início", use_container_width=True):
-            st.session_state.page = "main"
-            st.rerun()
-            
-        if st.button("Histórico", use_container_width=True):
-            st.session_state.page = "history"
-            st.rerun()
-            
-        if st.button("Relatório", use_container_width=True):
-            st.session_state.page = "report"
-            st.rerun()
-            
-        # Show admin tab only for admin users
-        if st.session_state.is_admin:
-            if st.button("Admin", use_container_width=True):
-                st.session_state.page = "admin"
-                st.rerun()
+        # Display current balance
+        col1, col2 = st.columns(2)
         
-        # Add some space
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Logout button at the bottom
-        if st.button("Sair", use_container_width=True):
-            # Reset session state
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            
-            # Set default values
-            st.session_state.authenticated = False
-            st.session_state.page = "login"
-            st.rerun()
-    
-    # Center the title without icon
-    st.markdown(f"""
-        <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
-        <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
-            {format_date_range(st.session_state.start_date, st.session_state.end_date)}
-        </div>
-        <style>
-        .amount-title {{
-            color: #FFFFFF;
-            text-align: center;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }}
-        .amount-container {{
-            background-color: #262730;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px 0;
-            text-align: center;
-        }}
-        .amount-container .value {{
-            color: #FFFFFF;
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }}
-        .amount-container .status {{
-            color: #888888;
-            font-size: 16px;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # Check if submission is late
-    if is_submission_late(st.session_state.end_date):
-        st.markdown("""
-            <div style="text-align: center; color: #ff4b4b; font-size: 18px; margin-bottom: 20px; padding: 10px; border: 1px solid #ff4b4b; border-radius: 5px;">
-                ⚠️ Submissão de relatório em atraso!
+        with col1:
+            st.markdown("""
+            <div class="amount-title">RECEITAS</div>
+            <div class="amount-container">
+                <div class="value">€ {:.2f}</div>
             </div>
-        """, unsafe_allow_html=True)
-    
-    # Create two columns for buttons
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("Saídas", key="expense_button", use_container_width=True):
-            st.session_state.page = "categories"
-            st.session_state.transaction_type = TransactionType.EXPENSE.value
-            st.rerun()
-    
-    with col2:
-        if st.button("Entradas", key="income_button", use_container_width=True):
-            st.session_state.page = "categories"
-            st.session_state.transaction_type = TransactionType.INCOME.value
-            st.rerun()
-    
-    # Show balance at the bottom
-    # Initialize values
-    abs_amount = 0
-    status_text = ""
-    
-    if st.session_state.transactions:
-        df = create_transaction_df(st.session_state.transactions)
-        summary = get_period_summary(df)
+            """.format(st.session_state.total_income), unsafe_allow_html=True)
         
-        # Calculate absolute value and determine status
-        abs_amount = abs(summary['net_amount'])
-        status_text = "A receber" if summary['net_amount'] < 0 else "A entregar" if summary['net_amount'] > 0 else ""
-    
-    st.markdown('<div class="amount-title">Saldo</div>', unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="amount-container">
-        <div class="value">{format_currency(abs_amount)}</div>
-        <div class="status">{status_text}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-def show_categories():
-    """Show the categories page"""
-    # Back button in categories
-    show_home_button()
-    st.subheader("Categorias")
-    st.write("Selecione uma categoria para registrar uma transação:")
-    
-    # Add buttons for different transaction types
-    if st.button("Saídas"):
-        st.session_state.category = ExpenseCategory.OTHER.value
-        navigate_to_form(ExpenseCategory.OTHER.value)
-    if st.button("Saídas"):
-        st.session_state.category = ExpenseCategory.HR.value
-        navigate_to_form(ExpenseCategory.HR.value)
-    if st.button("Saídas"):
-        st.session_state.category = ExpenseCategory.DELIVERY.value
-        navigate_to_form(ExpenseCategory.DELIVERY.value)
-    if st.button("Entradas"):
-        st.session_state.category = IncomeCategory.SERVICE.value
-        navigate_to_form(IncomeCategory.SERVICE.value)
-    if st.button("Entradas"):
-        st.session_state.category = IncomeCategory.DELIVERY.value
-        navigate_to_form(IncomeCategory.DELIVERY.value)
-
-def show_form():
-    """Show the form page"""
-    st.subheader("Registrar Transação")
-    
-    # Add form for different transaction types
-    if st.session_state.category == ExpenseCategory.OTHER.value:
-        # Initialize session state for purchase form
-        if "purchase_what" not in st.session_state:
-            st.session_state.purchase_what = ""
-        if "purchase_amount" not in st.session_state:
-            st.session_state.purchase_amount = 0.0
-        if "purchase_justification" not in st.session_state:
-            st.session_state.purchase_justification = ""
-        if "purchase_date" not in st.session_state:
-            st.session_state.purchase_date = st.session_state.current_start_date
+        with col2:
+            st.markdown("""
+            <div class="amount-title">DESPESAS</div>
+            <div class="amount-container">
+                <div class="value">€ {:.2f}</div>
+            </div>
+            """.format(st.session_state.total_expenses), unsafe_allow_html=True)
         
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.purchase_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="purchase_date_input"
-        )
-        if selected_date != st.session_state.purchase_date:
-            st.session_state.purchase_date = selected_date
-            st.rerun()
-        
-        # What field
-        new_what = st.text_input(
-            "O quê?",
-            value=st.session_state.purchase_what,
-            key="purchase_what_input"
-        )
-        if new_what != st.session_state.purchase_what:
-            st.session_state.purchase_what = new_what
-            st.rerun()
-        
-        # Amount field
-        new_amount = st.number_input(
-            "Valor da Fatura (€)",
-            min_value=0.0,
-            step=0.5,
-            value=st.session_state.purchase_amount,
-            key="purchase_amount_input"
-        )
-        if new_amount != st.session_state.purchase_amount:
-            st.session_state.purchase_amount = new_amount
-            st.rerun()
-        
-        # Justification field
-        new_justification = st.text_area(
-            "Justificação",
-            value=st.session_state.purchase_justification,
-            key="purchase_justification_input"
-        )
-        if new_justification != st.session_state.purchase_justification:
-            st.session_state.purchase_justification = new_justification
-            st.rerun()
-        
-        # Add spacing
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Always display amount for purchases
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
+        # Display net amount
+        st.markdown("""
+        <div class="amount-title">SALDO</div>
         <div class="amount-container">
-            <div class="value">{format_currency(st.session_state.purchase_amount)}</div>
+            <div class="value">€ {:.2f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """.format(st.session_state.net_amount), unsafe_allow_html=True)
         
-        st.write("")  # Add space before submit button
+        # Add transaction buttons
+        col1, col2 = st.columns(2)
         
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_purchase", use_container_width=True):
-                # Validate fields
-                validation_error = None
-                if not st.session_state.purchase_what.strip():
-                    validation_error = "Por favor, especifique o que foi comprado"
-                elif st.session_state.purchase_amount <= 0:
-                    validation_error = "Por favor, insira um valor válido"
-                elif not st.session_state.purchase_justification.strip():
-                    validation_error = "Por favor, forneça uma justificação"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    description = f"{st.session_state.purchase_what} (Valor: {format_currency(st.session_state.purchase_amount)}) - {st.session_state.purchase_justification}"
-                    save_transaction(
-                        st.session_state.purchase_date,
-                        TransactionType.EXPENSE.value,
-                        ExpenseCategory.OTHER.value,
-                        description,
-                        st.session_state.purchase_amount
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    # Reset form state
-                    del st.session_state.purchase_what
-                    del st.session_state.purchase_amount
-                    del st.session_state.purchase_justification
-                    del st.session_state.purchase_date
-                    st.session_state.page = "main"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        with col1:
+            if st.button("+ RECEITA", use_container_width=True):
+                navigate_to_categories(TransactionType.INCOME.value)
+        
+        with col2:
+            if st.button("+ DESPESA", use_container_width=True):
+                navigate_to_categories(TransactionType.EXPENSE.value)
     
-    elif st.session_state.category == ExpenseCategory.DELIVERY.value:
-        # Initialize session state for delivery form
-        if "delivery_collaborator" not in st.session_state:
-            st.session_state.delivery_collaborator = ""
-        if "delivery_amount" not in st.session_state:
-            st.session_state.delivery_amount = 0.0
-        if "delivery_date" not in st.session_state:
-            st.session_state.delivery_date = st.session_state.current_start_date
-        
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.delivery_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="delivery_date_input"
-        )
-        if selected_date != st.session_state.delivery_date:
-            st.session_state.delivery_date = selected_date
-            st.rerun()
-        
-        # Collaborator name field
-        new_collaborator = st.text_input(
-            "Nome do Colaborador",
-            value=st.session_state.delivery_collaborator,
-            key="delivery_collaborator_input"
-        )
-        if new_collaborator != st.session_state.delivery_collaborator:
-            st.session_state.delivery_collaborator = new_collaborator
-            st.rerun()
-        
-        # Amount field
-        new_amount = st.number_input(
-            "Valor (€)",
-            min_value=0.0,
-            step=0.5,
-            value=st.session_state.delivery_amount,
-            key="delivery_amount_input"
-        )
-        if new_amount != st.session_state.delivery_amount:
-            st.session_state.delivery_amount = new_amount
-            st.rerun()
-        
-        # Add spacing
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Always display amount for deliveries
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="amount-container">
-            <div class="value">{format_currency(st.session_state.delivery_amount)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("")  # Add space before submit button
-        
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_delivery", use_container_width=True):
-                # Validate fields
-                validation_error = None
-                if not st.session_state.delivery_collaborator.strip():
-                    validation_error = "Por favor, insira o nome do colaborador"
-                elif st.session_state.delivery_amount <= 0:
-                    validation_error = "Por favor, insira um valor válido"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    description = f"Entregue a {st.session_state.delivery_collaborator} (Valor: {format_currency(st.session_state.delivery_amount)})"
-                    save_transaction(
-                        st.session_state.delivery_date,
-                        TransactionType.EXPENSE.value,
-                        ExpenseCategory.DELIVERY.value,
-                        description,
-                        st.session_state.delivery_amount
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    # Reset form state
-                    del st.session_state.delivery_collaborator
-                    del st.session_state.delivery_amount
-                    del st.session_state.delivery_date
-                    st.session_state.page = "main"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    elif st.session_state.category == IncomeCategory.SERVICE.value:
-        # Initialize session state for service form
-        if "service_reference" not in st.session_state:
-            st.session_state.service_reference = ""
-        if "service_amount" not in st.session_state:
-            st.session_state.service_amount = 0.0
-        if "service_date" not in st.session_state:
-            st.session_state.service_date = st.session_state.current_start_date
-        
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.service_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="service_date_input"
-        )
-        if selected_date != st.session_state.service_date:
-            st.session_state.service_date = selected_date
-            st.rerun()
-        
-        # Reference number field
-        new_reference = st.text_input(
-            "Número do Serviço",
-            value=st.session_state.service_reference,
-            key="service_reference_input"
-        )
-        if new_reference != st.session_state.service_reference:
-            st.session_state.service_reference = new_reference
-            st.rerun()
-        
-        # Amount field
-        new_amount = st.number_input(
-            "Valor (€)",
-            min_value=0.0,
-            step=0.5,
-            value=st.session_state.service_amount,
-            key="service_amount_input"
-        )
-        if new_amount != st.session_state.service_amount:
-            st.session_state.service_amount = new_amount
-            st.rerun()
-        
-        # Add spacing
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Always display amount for services
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="amount-container">
-            <div class="value">{format_currency(st.session_state.service_amount)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("")  # Add space before submit button
-        
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_service", use_container_width=True):
-                # Validate fields
-                validation_error = None
-                if not st.session_state.service_reference.strip():
-                    validation_error = "Por favor, insira o número do serviço"
-                elif st.session_state.service_amount <= 0:
-                    validation_error = "Por favor, insira um valor válido"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    description = f"Serviço #{st.session_state.service_reference} (Valor: {format_currency(st.session_state.service_amount)})"
-                    save_transaction(
-                        st.session_state.service_date,
-                        TransactionType.INCOME.value,
-                        IncomeCategory.SERVICE.value,
-                        description,
-                        st.session_state.service_amount
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    # Reset form state
-                    del st.session_state.service_reference
-                    del st.session_state.service_amount
-                    del st.session_state.service_date
-                    st.session_state.page = "main"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    elif st.session_state.category == IncomeCategory.DELIVERY.value:
-        # Initialize session state for delivery income form
-        if "delivery_income_collaborator" not in st.session_state:
-            st.session_state.delivery_income_collaborator = ""
-        if "delivery_income_amount" not in st.session_state:
-            st.session_state.delivery_income_amount = 0.0
-        if "delivery_income_date" not in st.session_state:
-            st.session_state.delivery_income_date = st.session_state.current_start_date
-        
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.delivery_income_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="delivery_income_date_input"
-        )
-        if selected_date != st.session_state.delivery_income_date:
-            st.session_state.delivery_income_date = selected_date
-            st.rerun()
-        
-        # Collaborator name field
-        new_collaborator = st.text_input(
-            "Nome do Colaborador",
-            value=st.session_state.delivery_income_collaborator,
-            key="delivery_income_collaborator_input"
-        )
-        if new_collaborator != st.session_state.delivery_income_collaborator:
-            st.session_state.delivery_income_collaborator = new_collaborator
-            st.rerun()
-        
-        # Amount field
-        new_amount = st.number_input(
-            "Valor (€)",
-            min_value=0.0,
-            step=0.5,
-            value=st.session_state.delivery_income_amount,
-            key="delivery_income_amount_input"
-        )
-        if new_amount != st.session_state.delivery_income_amount:
-            st.session_state.delivery_income_amount = new_amount
-            st.rerun()
-        
-        # Add spacing
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Always display amount for delivery income
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="amount-container">
-            <div class="value">{format_currency(st.session_state.delivery_income_amount)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("")  # Add space before submit button
-        
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_delivery_income", use_container_width=True):
-                # Validate fields
-                validation_error = None
-                if not st.session_state.delivery_income_collaborator.strip():
-                    validation_error = "Por favor, insira o nome do colaborador"
-                elif st.session_state.delivery_income_amount <= 0:
-                    validation_error = "Por favor, insira um valor válido"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    description = f"Recebido de {st.session_state.delivery_income_collaborator} (Valor: {format_currency(st.session_state.delivery_income_amount)})"
-                    save_transaction(
-                        st.session_state.delivery_income_date,
-                        TransactionType.INCOME.value,
-                        IncomeCategory.DELIVERY.value,
-                        description,
-                        st.session_state.delivery_income_amount
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    # Reset form state
-                    del st.session_state.delivery_income_collaborator
-                    del st.session_state.delivery_income_amount
-                    del st.session_state.delivery_income_date
-                    st.session_state.page = "main"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    else:
-        with st.form("transaction_form", clear_on_submit=True):
-            st.markdown('<div class="form-container">', unsafe_allow_html=True)
-            
-            date = st.date_input("Data", datetime.now())
-            amount = None
-            error = None
-            
-            amount = st.number_input("Valor (€)", min_value=0.0, step=0.5)
-            description = st.text_input("Descrição")
-            
-            if st.form_submit_button("Submeter"):
-                error = None if amount > 0 else "O valor deve ser maior que 0"
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            if error:
-                st.error(error)
-            elif amount is not None:
-                save_transaction(date, st.session_state.transaction_type, st.session_state.category, description, amount)
-                st.success("Transação registrada com sucesso!")
-                st.session_state.page = "main"
-                st.rerun()
-
-def save_transaction(date, type_, category, description, amount):
-    """Save a transaction to the session state"""
-    # Format date as string if it's a date object
-    date_str = date.strftime(DATE_FORMAT) if hasattr(date, 'strftime') else date
+    with tab2:
+        show_history_tab()
     
-    transaction = {
-        "Date": date_str,
-        "Type": type_,
-        "Category": category,
-        "Description": description,
-        "Amount": amount,
-        "Username": st.session_state.username  # Add username to transaction
-    }
-    st.session_state.transactions.append(transaction)
+    with tab3:
+        show_report_tab()
     
-    # Save transactions to file
-    save_user_transactions(st.session_state.username, st.session_state.transactions)
-    
-    # Auto-save all user data
-    auto_save_user_data()
-
-# User data functions
-def get_user_data_dir():
-    """Get the directory for user data"""
-    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "users")
-    print(f"DEBUG - User data directory: {data_dir}")
-    print(f"DEBUG - Current working directory: {os.getcwd()}")
-    print(f"DEBUG - __file__: {__file__}")
-    print(f"DEBUG - Directory exists: {os.path.exists(data_dir)}")
-    if not os.path.exists(data_dir):
-        try:
-            os.makedirs(data_dir)
-            print(f"DEBUG - Created directory: {data_dir}")
-        except Exception as e:
-            print(f"DEBUG - Error creating directory: {str(e)}")
-    return data_dir
-
-def get_user_dir(username):
-    """Get the directory for a specific user"""
-    user_dir = os.path.join(get_user_data_dir(), username)
-    if not os.path.exists(user_dir):
-        os.makedirs(user_dir)
-    return user_dir
-
-def generate_pdf_report(username, report_data):
-    """Generate a PDF report for a user's expense report"""
-    # Create a BytesIO object to store the PDF
-    buffer = BytesIO()
-    
-    # Create the PDF document with wider margins to prevent text cutting
-    doc = SimpleDocTemplate(buffer, pagesize=letter, 
-                           leftMargin=36, rightMargin=36, 
-                           topMargin=36, bottomMargin=36)
-    elements = []
-    
-    # Define styles
-    styles = getSampleStyleSheet()
-    title_style = styles['Heading1']
-    subtitle_style = styles['Heading2']
-    normal_style = styles['Normal']
-    
-    # Add title
-    elements.append(Paragraph(f"Relatório de Despesas - {report_data['number']}", title_style))
-    elements.append(Spacer(1, 12))
-    
-    # Add user info
-    elements.append(Paragraph(f"Colaborador: {username}", subtitle_style))
-    elements.append(Paragraph(f"Período: {report_data['period']}", normal_style))
-    elements.append(Spacer(1, 12))
-    
-    # Add summary
-    elements.append(Paragraph("Resumo", subtitle_style))
-    summary_data = [
-        ["Descrição", "Valor"],
-        ["Total Despesas", f"{format_currency(report_data['summary'].get('total_expenses', report_data['summary'].get('total_expense', 0)))}"],
-        ["Total Refeições", f"{format_currency(report_data['summary'].get('total_meals', 0))}"],
-        ["Total Transportes", f"{format_currency(report_data['summary'].get('total_transport', 0))}"],
-        ["Total Outros", f"{format_currency(report_data['summary'].get('total_other', 0))}"],
-        ["Saldo Final", f"{format_currency(report_data['summary'].get('net_amount', 0))}"]
-    ]
-    
-    # Adjust column widths for better fit
-    summary_table = Table(summary_data, colWidths=[300, 150])
-    summary_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (1, 0), 'CENTER'),
-        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
-        ('BACKGROUND', (0, -1), (1, -1), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertical alignment
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),    # Add padding
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),   # Add padding
-    ]))
-    elements.append(summary_table)
-    elements.append(Spacer(1, 24))
-    
-    # Add transactions
-    if report_data['transactions']:
-        elements.append(Paragraph("Detalhes das Transações", subtitle_style))
-        
-        # Create table data
-        transaction_data = [["Data", "Tipo", "Categoria", "Descrição", "Valor"]]
-        
-        for t in report_data['transactions']:
-            transaction_data.append([
-                t.get('Date', t.get('date', '')),
-                t.get('Type', t.get('type', '')),
-                t.get('Category', t.get('category', '')),
-                t.get('Description', t.get('description', '')),
-                format_currency(t.get('Amount', t.get('amount', 0)))
-            ])
-        
-        # Create the table with adjusted column widths and word wrapping
-        transaction_table = Table(transaction_data, colWidths=[70, 70, 90, 180, 70])
-        transaction_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertical alignment
-            ('LEFTPADDING', (0, 0), (-1, -1), 6),    # Add padding
-            ('RIGHTPADDING', (0, 0), (-1, -1), 6),   # Add padding
-            ('WORDWRAP', (0, 0), (-1, -1), True),    # Enable word wrapping
-        ]))
-        elements.append(transaction_table)
-    
-    # Build the PDF
-    doc.build(elements)
-    
-    # Get the PDF data
-    pdf_data = buffer.getvalue()
-    buffer.close()
-    
-    return pdf_data
-
-def get_pdf_download_link(pdf_data, filename):
-    """Generate a download link for a PDF file"""
-    b64 = base64.b64encode(pdf_data).decode()
-    href = f'''
-    <a href="data:application/pdf;base64,{b64}" download="{filename}.pdf" 
-       style="display: flex; align-items: center; justify-content: center; 
-              width: 32px; height: 32px; background-color: #1E1E1E; 
-              border-radius: 4px; transition: all 0.3s; text-decoration: none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="white"/>
-        </svg>
-    </a>
-    '''
-    return href
-
-def auto_save_user_data():
-    """Auto-save all user data"""
-    if "username" in st.session_state and st.session_state.username:
-        username = st.session_state.username
-        print(f"DEBUG - Auto-saving data for user {username}")
-        print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
-        
-        # Save transactions
-        if "transactions" in st.session_state:
-            save_user_transactions(username, st.session_state.transactions)
-            print(f"DEBUG - Saved {len(st.session_state.transactions)} transactions for user {username}")
-        
-        # Save history
-        if "history" in st.session_state:
-            save_user_history(username, st.session_state.history)
-            print(f"DEBUG - Saved {len(st.session_state.history)} history items for user {username}")
-        
-        # Save dates
-        if all(k in st.session_state for k in ["start_date", "end_date"]):
-            save_user_dates(
-                username, 
-                st.session_state.start_date, 
-                st.session_state.end_date,
-                st.session_state.report_counter if "report_counter" in st.session_state else 1
-            )
-            print(f"DEBUG - Saved dates: {st.session_state.start_date} to {st.session_state.end_date}")
-        else:
-            print(f"DEBUG - Could not save dates, missing keys. Available keys: {list(st.session_state.keys())}")
-
-def main():
-    """Main function"""
-    # Add custom CSS
-    st.markdown("""
-    <style>
-    .block-container {
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Initialize session state variables if they don't exist
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    
-    if "page" not in st.session_state:
-        st.session_state.page = "login"
-    
-    # Debug message
-    print(f"DEBUG - Current page: {st.session_state.page}")
-    print(f"DEBUG - Authenticated: {st.session_state.authenticated}")
-    
-    # Check if users.json exists, if not, create it with default users
-    if not os.path.exists(get_users_file_path()):
-        initialize_default_users()
-    
-    # Create data directory if it doesn't exist
-    os.makedirs(get_user_data_dir(), exist_ok=True)
-    
-    # Auto-save user data on each rerun
-    auto_save_user_data()
-    
-    # Show appropriate page based on session state
-    if not st.session_state.authenticated:
-        show_login_page()
-    else:
-        if st.session_state.page == "login":
-            show_login_page()
-        elif st.session_state.page == "main":
-            show_main_page()
-        elif st.session_state.page == "categories":
-            show_categories()
-        elif st.session_state.page == "form":
-            show_form()
-        elif st.session_state.page == "admin":
+    if st.session_state.is_admin and tab4:
+        with tab4:
             show_admin_tab()
-        elif st.session_state.page == "history":
-            show_history_tab()
-        elif st.session_state.page == "report":
-            show_report_tab()
-        else:
-            st.error(f"Unknown page: {st.session_state.page}")
 
 def show_admin_tab():
     """Show the admin dashboard"""
@@ -1646,8 +968,8 @@ def show_admin_tab():
                 expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
                 
                 # Format dates to dd/MM
-                income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
-                expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+                income_df["Date"] = income_df["Date"].dt.strftime("%d/%m")
+                expense_df["Date"] = expense_df["Date"].dt.strftime("%d/%m")
                 
                 # Display income transactions
                 if not income_df.empty:
@@ -1785,8 +1107,8 @@ def show_admin_tab():
                         # Format amounts and dates
                         income_df["Amount"] = income_df["Amount"].apply(format_currency)
                         expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
-                        income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
-                        expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+                        income_df["Date"] = income_df["Date"].dt.strftime("%d/%m")
+                        expense_df["Date"] = expense_df["Date"].dt.strftime("%d/%m")
                         
                         # Display income transactions
                         if not income_df.empty:
@@ -1906,8 +1228,8 @@ def show_history_tab():
             expense_df = expense_df.sort_values("Date", ascending=True)
             
             # Format amounts
-            income_df["Amount"] = income_df["Amount"].apply(lambda x: f"R$ {float(x):.2f}")
-            expense_df["Amount"] = expense_df["Amount"].apply(lambda x: f"R$ {float(x):.2f}")
+            income_df["Amount"] = income_df["Amount"].apply(lambda x: f"€ {float(x):.2f}")
+            expense_df["Amount"] = expense_df["Amount"].apply(lambda x: f"€ {float(x):.2f}")
             
             # Display income transactions
             if not income_df.empty:
@@ -1969,15 +1291,15 @@ def show_history_tab():
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {report['summary'].get('total_income', 0):.2f}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">€ {report['summary'].get('total_income', 0):.2f}</span>
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {report['summary'].get('total_expenses', 0):.2f}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">€ {report['summary'].get('total_expenses', 0):.2f}</span>
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Saldo: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {abs(report['summary'].get('net_amount', 0)):.2f}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">€ {abs(report['summary'].get('net_amount', 0)):.2f}</span>
                     <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if report['summary'].get('net_amount', 0) >= 0 else 'A receber'})</span>
                 </div>
             </div>
@@ -2003,23 +1325,23 @@ def show_report_tab():
     # Ensure dates are datetime.date objects
     if isinstance(start_date, str):
         try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
         except ValueError:
             try:
-                start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             except ValueError:
                 print(f"DEBUG - Could not parse start_date: {start_date}")
-                start_date = datetime.date.today() - datetime.timedelta(days=7)
+                start_date = date.today() - timedelta(days=7)
     
     if isinstance(end_date, str):
         try:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
         except ValueError:
             try:
-                end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
             except ValueError:
                 print(f"DEBUG - Could not parse end_date: {end_date}")
-                end_date = datetime.date.today()
+                end_date = date.today()
     
     # Update session state with converted dates
     st.session_state.start_date = start_date
@@ -2082,7 +1404,7 @@ def show_report_tab():
                     <div><strong>Data:</strong> {date_str}</div>
                     <div><strong>Categoria:</strong> {category}</div>
                     <div><strong>Descrição:</strong> {description}</div>
-                    <div><strong>Valor:</strong> R$ {amount:.2f}</div>
+                    <div><strong>Valor:</strong> € {amount:.2f}</div>
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -2091,7 +1413,7 @@ def show_report_tab():
                     <div><strong>Data:</strong> {date_str}</div>
                     <div><strong>Categoria:</strong> {category}</div>
                     <div><strong>Descrição:</strong> {description}</div>
-                    <div><strong>Valor:</strong> R$ {amount:.2f}</div>
+                    <div><strong>Valor:</strong> € {amount:.2f}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -2108,31 +1430,19 @@ def show_report_tab():
         
         # Display summary
         st.write("### Resumo do período")
-        st.write(f"**Total de receitas:** R$ {total_income:.2f}")
-        st.write(f"**Total de despesas:** R$ {total_expenses:.2f}")
-        st.write(f"**Saldo:** R$ {net_amount:.2f}")
+        st.write(f"**Total de receitas:** € {total_income:.2f}")
+        st.write(f"**Total de despesas:** € {total_expenses:.2f}")
+        st.write(f"**Saldo:** € {net_amount:.2f}")
         
         # Submit button
         if st.button("Submeter Relatório"):
-            # Validate submission
-            today = datetime.date.today()
-            
-            # Check if end date is in the future
-            if end_date > today:
-                st.error("Não é possível submeter relatórios para períodos futuros.")
-                return
-            
-            # Check if end date is before a specific date (e.g., 09/02/2025)
-            specific_date = datetime.date(2025, 2, 9)
-            if end_date < specific_date:
-                st.error(f"Não é possível submeter relatórios para períodos anteriores a {specific_date.strftime('%d/%m/%Y')}.")
-                return
+            # Validate submission - removing the problematic date validation
             
             # Generate report number
             report_number = f"REL{st.session_state.report_counter:03d}"
             
-            # Create report object
-            report = {
+            # Create report data
+            report_data = {
                 "number": report_number,
                 "period": format_date_range(start_date, end_date),
                 "transactions": period_transactions,
@@ -2141,7 +1451,7 @@ def show_report_tab():
                     "total_expenses": total_expenses,
                     "net_amount": net_amount
                 },
-                "submission_date": today.strftime('%d/%m/%Y')
+                "submission_date": datetime.now().strftime('%d/%m/%Y')
             }
             
             # Initialize history if it doesn't exist
@@ -2154,11 +1464,11 @@ def show_report_tab():
             print(f"DEBUG - History type: {type(st.session_state.history)}")
             
             # Append report to history
-            st.session_state.history.append(report)
+            st.session_state.history.append(report_data)
             
             # Debug print after adding report
             print(f"DEBUG - History after adding report: {len(st.session_state.history)} items")
-            print(f"DEBUG - Report added: {report_number}")
+            print(f"DEBUG - Report added: {report_data['number']}")
             
             # Save history to file
             save_user_history(st.session_state.username, st.session_state.history)
@@ -2185,7 +1495,7 @@ def show_report_tab():
             auto_save_user_data()
             
             # Show success message
-            st.success(f"Relatório {report_number} submetido com sucesso!")
+            st.success(f"Relatório {report_data['number']} submetido com sucesso!")
             
             # Force rerun to update the UI
             st.rerun()

@@ -44,7 +44,7 @@ HR_RATES = {
 MAX_MEAL_ALLOWANCE_PER_PERSON = 12  # €
 
 # Date Format
-DATE_FORMAT = "%Y-%m-%d"
+DATE_FORMAT = "%d/%m/%Y"
 
 # CSV Export Headers
 TRANSACTION_HEADERS = [
