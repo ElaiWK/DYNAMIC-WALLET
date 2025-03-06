@@ -1524,6 +1524,58 @@ def convert_to_serializable(obj):
     else:
         return obj
 
+# User data functions
+def get_user_data_dir():
+    """Get the directory for user data"""
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "users")
+    print(f"DEBUG - User data directory: {data_dir}")
+    print(f"DEBUG - Current working directory: {os.getcwd()}")
+    print(f"DEBUG - __file__: {__file__}")
+    print(f"DEBUG - Directory exists: {os.path.exists(data_dir)}")
+    if not os.path.exists(data_dir):
+        try:
+            os.makedirs(data_dir)
+            print(f"DEBUG - Created directory: {data_dir}")
+        except Exception as e:
+            print(f"DEBUG - Error creating directory: {str(e)}")
+    return data_dir
+
+def get_user_dir(username):
+    """Get the directory for a specific user"""
+    user_dir = os.path.join(get_user_data_dir(), username)
+    if not os.path.exists(user_dir):
+        os.makedirs(user_dir)
+    return user_dir
+
+def auto_save_user_data():
+    """Auto-save all user data"""
+    if "username" in st.session_state and st.session_state.username:
+        username = st.session_state.username
+        print(f"DEBUG - Auto-saving data for user {username}")
+        print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
+        
+        # Save transactions
+        if "transactions" in st.session_state:
+            save_user_transactions(username, st.session_state.transactions)
+            print(f"DEBUG - Saved {len(st.session_state.transactions)} transactions for user {username}")
+        
+        # Save history
+        if "history" in st.session_state:
+            save_user_history(username, st.session_state.history)
+            print(f"DEBUG - Saved {len(st.session_state.history)} history items for user {username}")
+        
+        # Save dates
+        if all(k in st.session_state for k in ["start_date", "end_date"]):
+            save_user_dates(
+                username, 
+                st.session_state.start_date, 
+                st.session_state.end_date,
+                st.session_state.report_counter if "report_counter" in st.session_state else 1
+            )
+            print(f"DEBUG - Saved dates: {st.session_state.start_date} to {st.session_state.end_date}")
+        else:
+            print(f"DEBUG - Could not save dates, missing keys. Available keys: {list(st.session_state.keys())}")
+
 def main():
     """Main function"""
     # Add custom CSS
