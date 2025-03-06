@@ -590,73 +590,91 @@ def authenticate(username, password):
 
 def show_login_page():
     """Show the login page"""
-    # st.write("Debug - Current session state keys:", list(st.session_state.keys()))
+    st.title("Dynamic Wallet")
     
-    # Adicionar título "DYNAMIC WALLET"
-    st.markdown("<h1 style='text-align: center; color: #FFFFFF;'>DYNAMIC WALLET</h1>", unsafe_allow_html=True)
-    
-    # Centralizar o formulário de login
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        # Login form
-        st.subheader("Login")
-        with st.form("login_form"):
-            username = st.text_input("Nome de usuário")
-            password = st.text_input("Senha", type="password")
-            submit_button = st.form_submit_button("Entrar")
+    with st.form("login_form"):
+        username = st.text_input("Nome de usuário")
+        password = st.text_input("Senha", type="password")
+        submit_button = st.form_submit_button("Entrar")
+        
+        if submit_button:
+            if not username or not password:
+                st.error("Por favor, preencha todos os campos")
+                return
             
-            if submit_button:
-                st.write(f"Tentando login para usuário: {username}")
+            # Load users
+            users = load_users()
+            
+            # Check if username exists and password matches
+            if username in users and verify_password(password, users[username]["password"]):
+                st.success(f"Login bem-sucedido! Bem-vindo, {username}!")
                 
-                if authenticate(username, password):
-                    st.success(f"Login bem-sucedido! Bem-vindo, {username}!")
+                # Set session state
+                st.session_state.authenticated = True
+                st.session_state.username = username
+                st.session_state.is_admin = username == "admin"
+                
+                print(f"DEBUG - Login successful for user: {username}")
+                print(f"DEBUG - Is admin: {st.session_state.is_admin}")
+                
+                # Clear existing data first to prevent mixing
+                for key in list(st.session_state.keys()):
+                    if key not in ["authenticated", "username", "is_admin", "page", "first_load"]:
+                        del st.session_state[key]
+                
+                # Load user data
+                print(f"DEBUG - Loading user data for: {username}")
+                
+                # Make sure user directory exists
+                user_dir = get_user_dir(username)
+                os.makedirs(user_dir, exist_ok=True)
+                
+                # Load transactions
+                print("DEBUG - Loading transactions")
+                st.session_state.transactions = load_user_transactions(username) or []
+                print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
+                
+                # Calculate financial values
+                if st.session_state.transactions:
+                    # Create DataFrame from transactions
+                    df = create_transaction_df(st.session_state.transactions)
                     
-                    # Set session state
-                    st.session_state.authenticated = True
-                    st.session_state.username = username
-                    st.session_state.is_admin = username == "admin"
+                    # Get summary statistics
+                    summary = get_period_summary(df)
                     
-                    print(f"DEBUG - Login successful for user: {username}")
-                    print(f"DEBUG - Is admin: {st.session_state.is_admin}")
+                    # Set financial values in session state
+                    st.session_state.total_income = summary["total_income"]
+                    st.session_state.total_expenses = summary["total_expenses"]
+                    st.session_state.net_amount = summary["net_amount"]
                     
-                    # Clear existing data first to prevent mixing
-                    for key in list(st.session_state.keys()):
-                        if key not in ["authenticated", "username", "is_admin", "page", "first_load"]:
-                            del st.session_state[key]
-                    
-                    # Load user data
-                    print(f"DEBUG - Loading user data for: {username}")
-                    
-                    # Make sure user directory exists
-                    user_dir = get_user_dir(username)
-                    os.makedirs(user_dir, exist_ok=True)
-                    
-                    # Load transactions
-                    print("DEBUG - Loading transactions")
-                    st.session_state.transactions = load_user_transactions(username) or []
-                    print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
-                    
-                    # Load history
-                    print("DEBUG - Loading history")
-                    st.session_state.history = load_user_history(username) or []
-                    print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
-                    print(f"DEBUG - History data: {str(st.session_state.history)[:200]}...")
-                    
-                    # Load dates
-                    dates = load_user_dates(username)
-                    st.session_state.start_date = dates["start_date"]
-                    st.session_state.end_date = dates["end_date"]
-                    st.session_state.report_counter = dates.get("report_counter", 1)
-                    
-                    print(f"DEBUG - Loaded dates: {st.session_state.start_date} to {st.session_state.end_date}")
-                    print(f"DEBUG - Report counter: {st.session_state.report_counter}")
-                    
-                    # Redirect to main page
-                    st.session_state.page = "main"
-                    st.rerun()
+                    print(f"DEBUG - Calculated financial values: Income={st.session_state.total_income}, Expenses={st.session_state.total_expenses}, Net={st.session_state.net_amount}")
                 else:
-                    st.error("Nome de usuário ou senha inválidos")
+                    # Set default values if no transactions
+                    st.session_state.total_income = 0.0
+                    st.session_state.total_expenses = 0.0
+                    st.session_state.net_amount = 0.0
+                    print("DEBUG - No transactions found, setting financial values to 0")
+                
+                # Load history
+                print("DEBUG - Loading history")
+                st.session_state.history = load_user_history(username) or []
+                print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
+                print(f"DEBUG - History data: {str(st.session_state.history)[:200]}...")
+                
+                # Load dates
+                dates = load_user_dates(username)
+                st.session_state.start_date = dates["start_date"]
+                st.session_state.end_date = dates["end_date"]
+                st.session_state.report_counter = dates.get("report_counter", 1)
+                
+                print(f"DEBUG - Loaded dates: {st.session_state.start_date} to {st.session_state.end_date}")
+                print(f"DEBUG - Report counter: {st.session_state.report_counter}")
+                
+                # Redirect to main page
+                st.session_state.page = "main"
+                st.rerun()
+            else:
+                st.error("Nome de usuário ou senha inválidos")
 
 def get_week_dates(date):
     # Get Monday (start) of the week
@@ -834,44 +852,17 @@ def show_main_page():
     <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
     """, unsafe_allow_html=True)
     
-    # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["Início", "Histórico", "Relatório", "Admin" if st.session_state.is_admin else ""])
-    
-    with tab1:
-        # Main page content
-        st.markdown(
-            f"""
-            <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
-                {format_date_range(st.session_state.start_date, st.session_state.end_date)}
-            </div>
-            <style>
-            .amount-title {{
-                color: #FFFFFF;
-                text-align: center;
-                font-size: 16px;
-                margin-bottom: 10px;
-            }}
-            .amount-container {{
-                background-color: #262730;
-                border-radius: 10px;
-                padding: 20px;
-                margin: 10px 0;
-                text-align: center;
-            }}
-            .amount-container .value {{
-                color: #FFFFFF;
-                font-size: 24px;
-                font-weight: 500;
-            }}
-            </style>
-            """, 
-            unsafe_allow_html=True
-        )
+    # Create different tabs based on user role
+    if st.session_state.is_admin:
+        # Admin only needs Admin tab and Logout
+        tab1, tab2 = st.tabs(["Admin", "Sair"])
         
-        # Add logout button at the top right
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col3:
-            if st.button("Sair", key="logout_button"):
+        with tab1:
+            show_admin_tab()
+        
+        with tab2:
+            st.markdown("<h3 style='text-align: center;'>Sair do Sistema</h3>", unsafe_allow_html=True)
+            if st.button("Confirmar Logout", key="logout_button"):
                 # Reset session state
                 for key in list(st.session_state.keys()):
                     del st.session_state[key]
@@ -880,57 +871,99 @@ def show_main_page():
                 st.session_state.authenticated = False
                 st.session_state.page = "login"
                 st.rerun()
+    else:
+        # Regular users get all tabs
+        tab1, tab2, tab3, tab4 = st.tabs(["Início", "Histórico", "Relatório", "Sair"])
         
-        # User info
-        st.write(f"Logado como: **{st.session_state.username}**")
-        
-        # Display current balance
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        with tab1:
+            # Main page content
+            st.markdown(
+                f"""
+                <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
+                    {format_date_range(st.session_state.start_date, st.session_state.end_date)}
+                </div>
+                <style>
+                .amount-title {{
+                    color: #FFFFFF;
+                    text-align: center;
+                    font-size: 16px;
+                    margin-bottom: 10px;
+                }}
+                .amount-container {{
+                    background-color: #262730;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin: 10px 0;
+                    text-align: center;
+                }}
+                .amount-container .value {{
+                    color: #FFFFFF;
+                    font-size: 24px;
+                    font-weight: 500;
+                }}
+                </style>
+                """, 
+                unsafe_allow_html=True
+            )
+            
+            # User info
+            st.write(f"Logado como: **{st.session_state.username}**")
+            
+            # Display current balance
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("""
+                <div class="amount-title">RECEITAS</div>
+                <div class="amount-container">
+                    <div class="value">€ {:.2f}</div>
+                </div>
+                """.format(st.session_state.total_income), unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("""
+                <div class="amount-title">DESPESAS</div>
+                <div class="amount-container">
+                    <div class="value">€ {:.2f}</div>
+                </div>
+                """.format(st.session_state.total_expenses), unsafe_allow_html=True)
+            
+            # Display net amount
             st.markdown("""
-            <div class="amount-title">RECEITAS</div>
+            <div class="amount-title">SALDO</div>
             <div class="amount-container">
                 <div class="value">€ {:.2f}</div>
             </div>
-            """.format(st.session_state.total_income), unsafe_allow_html=True)
+            """.format(st.session_state.net_amount), unsafe_allow_html=True)
+            
+            # Add transaction buttons
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("+ RECEITA", use_container_width=True):
+                    navigate_to_categories(TransactionType.INCOME.value)
+            
+            with col2:
+                if st.button("+ DESPESA", use_container_width=True):
+                    navigate_to_categories(TransactionType.EXPENSE.value)
         
-        with col2:
-            st.markdown("""
-            <div class="amount-title">DESPESAS</div>
-            <div class="amount-container">
-                <div class="value">€ {:.2f}</div>
-            </div>
-            """.format(st.session_state.total_expenses), unsafe_allow_html=True)
+        with tab2:
+            show_history_tab()
         
-        # Display net amount
-        st.markdown("""
-        <div class="amount-title">SALDO</div>
-        <div class="amount-container">
-            <div class="value">€ {:.2f}</div>
-        </div>
-        """.format(st.session_state.net_amount), unsafe_allow_html=True)
+        with tab3:
+            show_report_tab()
         
-        # Add transaction buttons
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("+ RECEITA", use_container_width=True):
-                navigate_to_categories(TransactionType.INCOME.value)
-        
-        with col2:
-            if st.button("+ DESPESA", use_container_width=True):
-                navigate_to_categories(TransactionType.EXPENSE.value)
-    
-    with tab2:
-        show_history_tab()
-    
-    with tab3:
-        show_report_tab()
-    
-    if st.session_state.is_admin and tab4:
         with tab4:
-            show_admin_tab()
+            st.markdown("<h3 style='text-align: center;'>Sair do Sistema</h3>", unsafe_allow_html=True)
+            if st.button("Confirmar Logout", key="logout_button"):
+                # Reset session state
+                for key in list(st.session_state.keys()):
+                    del st.session_state[key]
+                
+                # Set default values
+                st.session_state.authenticated = False
+                st.session_state.page = "login"
+                st.rerun()
 
 def show_admin_tab():
     """Show the admin dashboard"""
@@ -1420,12 +1453,12 @@ def show_report_tab():
         
         # Calculate summary statistics
         total_income = sum(float(t.get("Amount", 0) or t.get("amount", 0)) 
-                          for t in period_transactions 
-                          if (t.get("Type", "") or t.get("type", "")) == TransactionType.INCOME.value)
+                              for t in period_transactions 
+                              if (t.get("Type", "") or t.get("type", "")) == TransactionType.INCOME.value)
         
         total_expenses = sum(float(t.get("Amount", 0) or t.get("amount", 0)) 
-                            for t in period_transactions 
-                            if (t.get("Type", "") or t.get("type", "")) == TransactionType.EXPENSE.value)
+                              for t in period_transactions 
+                              if (t.get("Type", "") or t.get("type", "")) == TransactionType.EXPENSE.value)
         
         net_amount = total_income - total_expenses
         
@@ -1594,6 +1627,26 @@ def main():
     
     if "page" not in st.session_state:
         st.session_state.page = "login"
+    
+    # Initialize financial variables
+    if "total_income" not in st.session_state:
+        st.session_state.total_income = 0.0
+    
+    if "total_expenses" not in st.session_state:
+        st.session_state.total_expenses = 0.0
+    
+    if "net_amount" not in st.session_state:
+        st.session_state.net_amount = 0.0
+    
+    # Initialize other required variables
+    if "transactions" not in st.session_state:
+        st.session_state.transactions = []
+    
+    if "history" not in st.session_state:
+        st.session_state.history = []
+    
+    if "is_admin" not in st.session_state:
+        st.session_state.is_admin = False
     
     # Debug message
     print(f"DEBUG - Current page: {st.session_state.page}")
