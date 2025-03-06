@@ -1,4 +1,13 @@
 import streamlit as st
+
+# Set page config - MUST be the first Streamlit command
+st.set_page_config(
+    page_title="Dynamic Wallet",
+    page_icon="💰",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 import pandas as pd
 import numpy as np
 import os
@@ -1787,14 +1796,6 @@ def auto_save_user_data():
 
 def main():
     """Main function"""
-    # Set page config
-    st.set_page_config(
-        page_title="Dynamic Wallet",
-        page_icon="💰",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
-
     # Add custom CSS
     st.markdown("""
     <style>
@@ -2283,10 +2284,10 @@ def show_report_tab():
                 # Convert string date to datetime.date if needed
                 if isinstance(transaction_date, str):
                     try:
-                        transaction_date = datetime.datetime.strptime(transaction_date, '%d/%m/%Y').date()
+                        transaction_date = datetime.strptime(transaction_date, '%d/%m/%Y').date()
                     except ValueError:
                         try:
-                            transaction_date = datetime.datetime.strptime(transaction_date, '%Y-%m-%d').date()
+                            transaction_date = datetime.strptime(transaction_date, '%Y-%m-%d').date()
                         except ValueError:
                             print(f"DEBUG - Could not parse date: {transaction_date}")
                             continue
