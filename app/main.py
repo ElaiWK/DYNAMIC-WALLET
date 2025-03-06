@@ -2234,6 +2234,35 @@ def show_report_tab():
     start_date = st.session_state.start_date
     end_date = st.session_state.end_date
     
+    # Print date types for debugging
+    print(f"DEBUG - start_date type: {type(start_date)}, value: {start_date}")
+    print(f"DEBUG - end_date type: {type(end_date)}, value: {end_date}")
+    
+    # Ensure dates are datetime.date objects
+    if isinstance(start_date, str):
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            try:
+                start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+            except ValueError:
+                print(f"DEBUG - Could not parse start_date: {start_date}")
+                start_date = datetime.date.today() - datetime.timedelta(days=7)
+    
+    if isinstance(end_date, str):
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            try:
+                end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+            except ValueError:
+                print(f"DEBUG - Could not parse end_date: {end_date}")
+                end_date = datetime.date.today()
+    
+    # Update session state with converted dates
+    st.session_state.start_date = start_date
+    st.session_state.end_date = end_date
+    
     # Display current period
     st.write(f"**Período atual:** {format_date_range(start_date, end_date)}")
     
