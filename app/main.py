@@ -1803,6 +1803,32 @@ def show_received_form():
             else:
                 st.error("Preencha todos os campos corretamente")
 
+def apply_custom_css():
+    """Apply custom CSS styling to the app."""
+    st.markdown("""
+    <style>
+    .main {
+        padding-top: 1rem;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 2px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #f0f2f6;
+        border-radius: 4px 4px 0 0;
+        gap: 1px;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff;
+        border-bottom: 2px solid #4CAF50;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 def main():
     """Main application function"""
     # Database is initialized early
