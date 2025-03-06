@@ -20,7 +20,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 import traceback
 import hmac
-import sqlite3  # Add SQLite import
+from enum import Enum
+import matplotlib
+matplotlib.use('Agg')
 
 from constants.config import (
     TransactionType,
@@ -130,17 +132,45 @@ def save_user_data(username, data_type, data):
     print(f"DEBUG - Saving {data_type} for user {username}")
     
     # Convert data to JSON string
-    data_converted = convert_to_serializable(data)
-    data_json = json.dumps(data_converted)
-    
     try:
+        data_converted = convert_to_serializable(data)
+        data_json = json.dumps(data_converted)
+        
+        # Print sample of data being saved
+        data_sample = str(data_converted)[:100] + "..." if len(str(data_converted)) > 100 else str(data_converted)
+        print(f"DEBUG - Data being saved: {data_sample}")
+        
         conn = sqlite3.connect('dynamic_wallet.db')
         c = conn.cursor()
-        c.execute("REPLACE INTO user_data VALUES (?, ?, ?)",
-                (username, data_type, data_json))
+        
+        # First check if the record exists
+        c.execute("SELECT COUNT(*) FROM user_data WHERE username=? AND data_type=?", 
+                 (username, data_type))
+        exists = c.fetchone()[0] > 0
+        
+        if exists:
+            print(f"DEBUG - Updating existing record for {username}, {data_type}")
+            c.execute("UPDATE user_data SET data=? WHERE username=? AND data_type=?",
+                    (data_json, username, data_type))
+        else:
+            print(f"DEBUG - Inserting new record for {username}, {data_type}")
+            c.execute("INSERT INTO user_data VALUES (?, ?, ?)",
+                    (username, data_type, data_json))
+        
         conn.commit()
+        
+        # Verify the data was saved correctly
+        c.execute("SELECT data FROM user_data WHERE username=? AND data_type=?",
+                (username, data_type))
+        result = c.fetchone()
+        
+        if result:
+            print(f"DEBUG - Successfully saved {data_type} for user {username}")
+            print(f"DEBUG - Saved data size: {len(result[0])} bytes")
+        else:
+            print(f"DEBUG - WARNING: Data may not have been saved correctly for {username}, {data_type}")
+        
         conn.close()
-        print(f"DEBUG - Successfully saved {data_type} for user {username}")
     except Exception as e:
         print(f"DEBUG - Error saving {data_type}: {str(e)}")
         print(f"DEBUG - Traceback: {traceback.format_exc()}")
@@ -282,17 +312,9 @@ def save_user_history(username, history):
         print(f"DEBUG - Error saving history to file: {str(e)}")
 
 def load_user_history(username):
-    """Load user history from SQLite database with file-based fallback"""
+    """Load user history from file"""
     try:
-        # First try to load from SQLite
-        history_from_db = load_user_data(username, 'history', [])
-        
-        if history_from_db and len(history_from_db) > 0:
-            print(f"DEBUG - Successfully loaded history from SQLite for user {username}")
-            return history_from_db
-        
-        # If SQLite failed or returned empty, try file-based approach
-        print(f"DEBUG - SQLite history empty, trying file-based approach for {username}")
+        print(f"DEBUG - Loading history for user {username}")
         user_dir = get_user_dir(username)
         history_file = os.path.join(user_dir, "history.json")
         
@@ -302,13 +324,11 @@ def load_user_history(username):
                     history_data = json.load(f)
                     print(f"DEBUG - Successfully loaded history from file for user {username}")
                     print(f"DEBUG - File-based history has {len(history_data)} items")
-                    
-                    # Save to SQLite for future use
-                    save_user_history(username, history_data)
-                    
+                    print(f"DEBUG - History data sample: {str(history_data)[:200]}...")
                     return history_data
             except Exception as e:
                 print(f"DEBUG - Error loading history from file: {str(e)}")
+                print(f"DEBUG - Traceback: {traceback.format_exc()}")
         
         # If all else fails, return empty list
         print(f"DEBUG - No history found for user {username}")
@@ -348,7 +368,34 @@ def load_user_dates(username):
         
         if dates_from_db:
             print(f"DEBUG - Successfully loaded dates from SQLite for user {username}")
-            return dates_from_db.get('start_date'), dates_from_db.get('end_date'), dates_from_db.get('report_counter', 1)
+            start_date = dates_from_db.get('start_date')
+            end_date = dates_from_db.get('end_date')
+            report_counter = dates_from_db.get('report_counter', 1)
+            
+            # Convert string dates to datetime objects
+            if isinstance(start_date, str):
+                try:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+                    except ValueError:
+                        print(f"DEBUG - Could not parse start_date: {start_date}")
+                        # Default to today
+                        start_date = datetime.now().date()
+            
+            if isinstance(end_date, str):
+                try:
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+                    except ValueError:
+                        print(f"DEBUG - Could not parse end_date: {end_date}")
+                        # Default to today + 6 days
+                        end_date = datetime.now().date() + timedelta(days=6)
+            
+            return start_date, end_date, report_counter
         
         # If SQLite failed or returned empty, try file-based approach
         print(f"DEBUG - SQLite dates empty, trying file-based approach for {username}")
@@ -364,7 +411,34 @@ def load_user_dates(username):
                     # Save to SQLite for future use
                     save_user_data(username, 'dates', dates_data)
                     
-                    return dates_data.get('start_date'), dates_data.get('end_date'), dates_data.get('report_counter', 1)
+                    start_date = dates_data.get('start_date')
+                    end_date = dates_data.get('end_date')
+                    report_counter = dates_data.get('report_counter', 1)
+                    
+                    # Convert string dates to datetime objects
+                    if isinstance(start_date, str):
+                        try:
+                            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                        except ValueError:
+                            try:
+                                start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+                            except ValueError:
+                                print(f"DEBUG - Could not parse start_date: {start_date}")
+                                # Default to today
+                                start_date = datetime.now().date()
+                    
+                    if isinstance(end_date, str):
+                        try:
+                            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                        except ValueError:
+                            try:
+                                end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+                            except ValueError:
+                                print(f"DEBUG - Could not parse end_date: {end_date}")
+                                # Default to today + 6 days
+                                end_date = datetime.now().date() + timedelta(days=6)
+                    
+                    return start_date, end_date, report_counter
             except Exception as e:
                 print(f"DEBUG - Error loading dates from file: {str(e)}")
         
@@ -563,40 +637,35 @@ def show_login_page():
                     # Load user data
                     print(f"DEBUG - Loading user data for: {username}")
                     
+                    # Make sure user directory exists
+                    user_dir = get_user_dir(username)
+                    os.makedirs(user_dir, exist_ok=True)
+                    
                     # Load transactions
                     print("DEBUG - Loading transactions")
-                    st.session_state.transactions = load_user_transactions(username)
+                    st.session_state.transactions = load_user_transactions(username) or []
                     print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
                     
                     # Load history
                     print("DEBUG - Loading history")
-                    st.session_state.history = load_user_history(username)
+                    st.session_state.history = load_user_history(username) or []
                     print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
                     print(f"DEBUG - History data: {str(st.session_state.history)[:200]}...")
                     
                     # Load dates
                     dates = load_user_dates(username)
-                    if dates:
-                        start_date, end_date, report_counter = dates
-                        st.session_state.current_start_date = start_date
-                        st.session_state.current_end_date = end_date
-                        st.session_state.report_counter = report_counter
-                        print(f"DEBUG - Loaded dates: {start_date} to {end_date}, counter: {report_counter}")
-                    else:
-                        # Set default dates if not found
-                        today = datetime.now().date()
-                        st.session_state.current_start_date, st.session_state.current_end_date = get_week_dates(today)
-                        st.session_state.report_counter = 1
-                        print(f"DEBUG - Set default dates: {st.session_state.current_start_date} to {st.session_state.current_end_date}")
-                
-                    st.session_state.user_data_loaded = True
-                    print("DEBUG - User data loaded flag set to True")
-                    print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
-                
-                    # Force rerun to show the main app
-                    st.rerun()
+                    st.session_state.start_date = dates["start_date"]
+                    st.session_state.end_date = dates["end_date"]
+                    st.session_state.report_counter = dates.get("report_counter", 1)
+                    
+                    print(f"DEBUG - Loaded dates: {st.session_state.start_date} to {st.session_state.end_date}")
+                    print(f"DEBUG - Report counter: {st.session_state.report_counter}")
+                    
+                    # Redirect to main page
+                    st.session_state.page = "main"
+                    st.experimental_rerun()
                 else:
-                    st.error("Invalid username or password. Please try again.")
+                    st.error("Invalid username or password")
 
 def get_week_dates(date):
     # Get Monday (start) of the week
@@ -1691,161 +1760,92 @@ def auto_save_user_data():
     """Auto-save all user data"""
     if "username" in st.session_state and st.session_state.username:
         username = st.session_state.username
+        print(f"DEBUG - Auto-saving data for user {username}")
+        print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
         
         # Save transactions
         if "transactions" in st.session_state:
             save_user_transactions(username, st.session_state.transactions)
-            print(f"Transações salvas para o usuário {username}")
+            print(f"DEBUG - Saved {len(st.session_state.transactions)} transactions for user {username}")
         
         # Save history
         if "history" in st.session_state:
             save_user_history(username, st.session_state.history)
-            print(f"Histórico salvo para o usuário {username}")
+            print(f"DEBUG - Saved {len(st.session_state.history)} history items for user {username}")
         
         # Save dates
-        if all(k in st.session_state for k in ["current_start_date", "current_end_date"]):
+        if all(k in st.session_state for k in ["start_date", "end_date"]):
             save_user_dates(
                 username, 
-                st.session_state.current_start_date, 
-                st.session_state.current_end_date,
+                st.session_state.start_date, 
+                st.session_state.end_date,
                 st.session_state.report_counter if "report_counter" in st.session_state else 1
             )
-            print(f"Datas e contador de relatórios salvos para o usuário {username}")
+            print(f"DEBUG - Saved dates: {st.session_state.start_date} to {st.session_state.end_date}")
+        else:
+            print(f"DEBUG - Could not save dates, missing keys. Available keys: {list(st.session_state.keys())}")
 
 def main():
-    # Initialize the SQLite database
-    init_db()
-    
-    # Verify database integrity
-    verify_db_integrity()
-    
-    # Debug: Show current authentication state
-    # Debug: Show current authentication state
-    # st.write(f"Debug - Authenticated: {st.session_state.get('authenticated', False)}")
-    # st.write(f"Debug - Username: {st.session_state.get('username', 'None')}")
+    """Main function"""
+    # Set page config
+    st.set_page_config(
+        page_title="Dynamic Wallet",
+        page_icon="💰",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+
+    # Add custom CSS
+    st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
     # Initialize session state variables if they don't exist
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
-    if "username" not in st.session_state:
-        st.session_state.username = None
+    
     if "page" not in st.session_state:
         st.session_state.page = "login"
-    if "first_load" not in st.session_state:
-        st.session_state.first_load = True
-        
-    # Debug: Print session state keys
-    print(f"Session state keys: {list(st.session_state.keys())}")
     
-    # If not authenticated, show login page
-    if not st.session_state.authenticated:
-        show_login_page()
-        return
+    # Debug message
+    print(f"DEBUG - Current page: {st.session_state.page}")
+    print(f"DEBUG - Authenticated: {st.session_state.authenticated}")
     
-    # User is authenticated, show the app
-    st.sidebar.success(f"Logged in as {st.session_state.username}")
+    # Check if users.json exists, if not, create it with default users
+    if not os.path.exists(get_users_file_path()):
+        initialize_default_users()
     
-    # Add logout button
-    if st.sidebar.button("Logout"):
-        # Save user data before logging out
-        print(f"DEBUG - Logout initiated for user: {st.session_state.username}")
-        print(f"DEBUG - Session state before logout: {list(st.session_state.keys())}")
-        
-        try:
-            if "transactions" in st.session_state:
-                print(f"DEBUG - Saving {len(st.session_state.transactions)} transactions before logout")
-                save_user_transactions(st.session_state.username, st.session_state.transactions)
-            else:
-                print("DEBUG - No transactions in session state to save")
-                
-            if "history" in st.session_state:
-                print(f"DEBUG - Saving {len(st.session_state.history)} history items before logout")
-                save_user_history(st.session_state.username, st.session_state.history)
-            else:
-                print("DEBUG - No history in session state to save")
-                
-            if "current_start_date" in st.session_state and "current_end_date" in st.session_state:
-                print(f"DEBUG - Saving dates before logout: {st.session_state.current_start_date} to {st.session_state.current_end_date}")
-                save_user_dates(
-                    st.session_state.username, 
-                    st.session_state.current_start_date, 
-                    st.session_state.current_end_date,
-                    st.session_state.get("report_counter", 1)
-                )
-        except Exception as e:
-            print(f"DEBUG - Error saving data during logout: {str(e)}")
-            print(f"DEBUG - Traceback: {traceback.format_exc()}")
-            st.sidebar.error(f"Error saving data: {str(e)}")
-        
-        # Clear session state
-        for key in list(st.session_state.keys()):
-            if key != "first_load":
-                del st.session_state[key]
-                
-        st.session_state.authenticated = False
-        st.session_state.username = None
-        st.rerun()
+    # Create data directory if it doesn't exist
+    os.makedirs(get_user_data_dir(), exist_ok=True)
     
-    # Initialize page state if not already done
-    if "page" not in st.session_state:
-        st.session_state.page = "main"
-    
-    # Load user data if not already loaded
-    if "user_data_loaded" not in st.session_state or not st.session_state.user_data_loaded:
-        st.session_state.transactions = load_user_transactions(st.session_state.username) or []
-        st.session_state.history = load_user_history(st.session_state.username) or []
-        
-        # Load saved date range and report counter if available
-        dates_data = load_user_dates(st.session_state.username)
-        if dates_data:
-            st.session_state.current_start_date, st.session_state.current_end_date, st.session_state.report_counter = dates_data
-        elif "current_start_date" not in st.session_state:
-            # Initialize date range if not already set
-            start_date = datetime.strptime("03/02/2025", "%d/%m/%Y").date()
-            end_date = datetime.strptime("09/02/2025", "%d/%m/%Y").date()
-            st.session_state.current_start_date = start_date
-            st.session_state.current_end_date = end_date
-            st.session_state.report_counter = 1
-        
-        st.session_state.user_data_loaded = True
-    
-    # Debug: Show loaded data
-    st.sidebar.write("Debug - Transactions:", len(st.session_state.transactions))
-    st.sidebar.write("Debug - History:", len(st.session_state.history))
-    st.sidebar.write("Debug - Current page:", st.session_state.page)
-    
-    # Auto-save user data periodically
+    # Auto-save user data on each rerun
     auto_save_user_data()
     
-    # Create tabs - add Admin tab if user is admin
-    if st.session_state.get("is_admin", False):
-        # Admin só vê o separador "Colaboradores"
-        tab4 = st.tabs(["Colaboradores"])[0]
-        
-        # Mostrar apenas a aba de colaboradores
-        with tab4:
-            show_admin_tab()
+    # Show appropriate page based on session state
+    if not st.session_state.authenticated:
+        show_login_page()
     else:
-        # Verificar a página atual e mostrar o conteúdo apropriado
-        if st.session_state.page == "categories":
+        if st.session_state.page == "login":
+            show_login_page()
+        elif st.session_state.page == "main":
+            show_main_page()
+        elif st.session_state.page == "categories":
             show_categories()
         elif st.session_state.page == "form":
             show_form()
-        else:  # página principal ou qualquer outra
-            tab1, tab2, tab3 = st.tabs(["Registar", "Relatório", "Histórico"])
-            
-            # Debug tab information
-            st.sidebar.write("Debug - Tab IDs:", tab1.id, tab2.id, tab3.id)
-            
-            # Show content directly in each tab
-            with tab1:
-                show_main_page()
-            
-            with tab2:
-                show_report_tab()
-            
-            with tab3:
-                show_history_tab()
+        elif st.session_state.page == "admin":
+            show_admin_tab()
+        elif st.session_state.page == "history":
+            show_history_tab()
+        elif st.session_state.page == "report":
+            show_report_tab()
+        else:
+            st.error(f"Unknown page: {st.session_state.page}")
 
 def show_admin_tab():
     """Show the admin dashboard"""
@@ -2103,19 +2103,36 @@ def show_admin_tab():
                 st.info(f"{selected_user} não tem histórico de relatórios")
 
 def show_history_tab():
+    """Show the history tab with all submitted reports"""
     # Debug message
-    st.write("DEBUG: show_history_tab function called")
+    print("DEBUG - show_history_tab function called")
+    print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
     
     st.subheader("Histórico de Relatórios")
     
-    if not st.session_state.history:
+    if "history" not in st.session_state or not st.session_state.history:
         st.info("Não existem relatórios guardados.")
+        print("DEBUG - No history found in session state")
         return
 
+    print(f"DEBUG - Found {len(st.session_state.history)} reports in history")
+    
     # Display detailed information for each report
     for report in st.session_state.history:
+        print(f"DEBUG - Processing report: {report.get('number', 'Unknown')}")
+        
+        # Check if report has required keys
+        if not all(k in report for k in ["number", "summary", "transactions"]):
+            print(f"DEBUG - Report missing required keys: {list(report.keys())}")
+            continue
+            
+        # Check if summary has required keys
+        if not all(k in report["summary"] for k in ["net_amount"]):
+            print(f"DEBUG - Report summary missing required keys: {list(report['summary'].keys())}")
+            continue
+        
         # Use just the expander without the PDF button in the regular history tab
-        with st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"):
+        with st.expander(f"{report['number']} - {report['period']}"):
             # Create DataFrame from transactions
             df_transactions = create_transaction_df(report['transactions'])
             
@@ -2126,11 +2143,9 @@ def show_history_tab():
             income_df = income_df.sort_values("Date", ascending=True)
             expense_df = expense_df.sort_values("Date", ascending=True)
             
-            # Format amounts and dates
-            income_df["Amount"] = income_df["Amount"].apply(format_currency)
-            expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
-            income_df["Date"] = pd.to_datetime(income_df["Date"]).dt.strftime("%d/%m")
-            expense_df["Date"] = pd.to_datetime(expense_df["Date"]).dt.strftime("%d/%m")
+            # Format amounts
+            income_df["Amount"] = income_df["Amount"].apply(lambda x: f"R$ {float(x):.2f}")
+            expense_df["Amount"] = expense_df["Amount"].apply(lambda x: f"R$ {float(x):.2f}")
             
             # Display income transactions
             if not income_df.empty:
@@ -2184,7 +2199,7 @@ def show_history_tab():
                     </div>
                     """, unsafe_allow_html=True)
             
-            # Display summary for this report
+            # Display summary
             st.markdown(f"""
             <div style="margin: 20px 0;">
                 <div style="margin-bottom: 15px;">
@@ -2192,294 +2207,199 @@ def show_history_tab():
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(report['summary']['total_income'])}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {report['summary'].get('total_income', 0):.2f}</span>
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(report['summary']['total_expense'])}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {report['summary'].get('total_expenses', 0):.2f}</span>
                 </div>
                 <div style="margin-bottom: 12px;">
                     <span style="font-size: 16px; color: white;">Saldo: </span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(report['summary']['net_amount']))}</span>
-                    <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">R$ {abs(report['summary'].get('net_amount', 0)):.2f}</span>
+                    <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if report['summary'].get('net_amount', 0) >= 0 else 'A receber'})</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
 
-def get_period_summary(df):
-    total_income = float(df[df["Type"] == TransactionType.INCOME.value]["Amount"].sum())
-    total_expense = float(df[df["Type"] == TransactionType.EXPENSE.value]["Amount"].sum())
-    net_amount = float(total_income - total_expense)
-    
-    return {
-        'total_income': total_income,
-        'total_expense': total_expense,
-        'net_amount': net_amount
-    }
-
 def show_report_tab():
+    """Show the report tab for submitting weekly reports"""
     # Debug message
-    st.write("DEBUG: show_report_tab function called")
+    print("DEBUG - show_report_tab function called")
+    print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
     
     # Simple title for the report tab
-    st.subheader("Relatório")
+    st.subheader("Relatório Semanal")
     
-    if st.session_state.transactions:
-        df = create_transaction_df(st.session_state.transactions)
+    # Get current period dates
+    start_date = st.session_state.start_date
+    end_date = st.session_state.end_date
+    
+    # Display current period
+    st.write(f"**Período atual:** {format_date_range(start_date, end_date)}")
+    
+    # Filter transactions for the current period
+    period_transactions = []
+    if "transactions" in st.session_state and st.session_state.transactions:
+        print(f"DEBUG - Total transactions: {len(st.session_state.transactions)}")
         
-        # Add filters
-        col1, col2 = st.columns(2)
-        with col1:
-            type_filter = st.selectbox(
-                "Tipo",
-                options=["Todos", TransactionType.EXPENSE.value, TransactionType.INCOME.value],
-                key="type_filter"
-            )
-        
-        with col2:
-            # Filter categories based on selected type
-            if type_filter == TransactionType.EXPENSE.value:
-                categories = [cat.value for cat in ExpenseCategory]
-            elif type_filter == TransactionType.INCOME.value:
-                categories = [cat.value for cat in IncomeCategory]
-            else:  # "Todos"
-                categories = ([cat.value for cat in ExpenseCategory] + 
-                            [cat.value for cat in IncomeCategory])
+        for transaction in st.session_state.transactions:
+            # Check if transaction has a date key (either 'Date' or 'date')
+            transaction_date = None
+            if "Date" in transaction:
+                transaction_date = transaction["Date"]
+            elif "date" in transaction:
+                transaction_date = transaction["date"]
             
-            category_filter = st.selectbox(
-                "Categoria",
-                options=["Todas"] + categories,
-                key="category_filter"
-            )
+            if transaction_date:
+                # Convert string date to datetime.date if needed
+                if isinstance(transaction_date, str):
+                    try:
+                        transaction_date = datetime.datetime.strptime(transaction_date, '%d/%m/%Y').date()
+                    except ValueError:
+                        try:
+                            transaction_date = datetime.datetime.strptime(transaction_date, '%Y-%m-%d').date()
+                        except ValueError:
+                            print(f"DEBUG - Could not parse date: {transaction_date}")
+                            continue
+                
+                # Check if transaction is within the current period
+                if start_date <= transaction_date <= end_date:
+                    period_transactions.append(transaction)
+            else:
+                print(f"DEBUG - Transaction without date: {transaction}")
+                # Include transactions without dates to avoid losing data
+                period_transactions.append(transaction)
+    
+    print(f"DEBUG - Period transactions: {len(period_transactions)}")
+    
+    # Display transactions for the current period
+    if period_transactions:
+        st.write("### Transações do período")
         
-        # Apply filters
-        if type_filter != "Todos":
-            df = df[df["Type"] == type_filter]
-        
-        if category_filter != "Todas":
-            df = df[df["Category"] == category_filter]
-        
-        # Filter by current date range
-        df["Date"] = pd.to_datetime(df["Date"], format=DATE_FORMAT)
-        df = df[(df["Date"] >= pd.to_datetime(st.session_state.current_start_date, format=DATE_FORMAT)) & 
-                (df["Date"] <= pd.to_datetime(st.session_state.current_end_date, format=DATE_FORMAT))]
-        
-        # Convert back to string for display
-        df["Date"] = df["Date"].dt.strftime("%d/%m/%Y")
-        
-        # Split dataframe by type
-        income_df = df[df["Type"] == TransactionType.INCOME.value].copy()
-        expense_df = df[df["Type"] == TransactionType.EXPENSE.value].copy()
-        
-        # Sort each dataframe by date
-        income_df = income_df.sort_values("Date", ascending=True)
-        expense_df = expense_df.sort_values("Date", ascending=True)
-        
-        # Format amounts for display
-        income_df["Amount"] = income_df["Amount"].apply(format_currency)
-        expense_df["Amount"] = expense_df["Amount"].apply(format_currency)
-        
-        # Display income transactions
-        if not income_df.empty:
-            st.markdown("<h4 style='font-size: 18px; color: white;'>Entradas</h4>", unsafe_allow_html=True)
-            for _, row in income_df.iterrows():
+        # Display transactions in a nice format
+        for transaction in period_transactions:
+            transaction_type = transaction.get("Type", "") or transaction.get("type", "")
+            category = transaction.get("Category", "") or transaction.get("category", "")
+            description = transaction.get("Description", "") or transaction.get("description", "")
+            amount = transaction.get("Amount", 0) or transaction.get("amount", 0)
+            date_str = transaction.get("Date", "") or transaction.get("date", "")
+            
+            # Format the transaction display
+            if transaction_type == TransactionType.INCOME.value:
                 st.markdown(f"""
-                <div style="
-                    background-color: #1E1E1E;
-                    border-left: 4px solid #4CAF50;
-                    padding: 1rem;
-                    margin: 0.5rem 0;
-                    border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #CCCCCC;">{row['Date']}</span>
-                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="background-color: rgba(76, 175, 80, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                            {row['Category']}
-                        </span>
-                    </div>
-                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                        {row['Description']}
-                    </div>
+                <div style='background-color: rgba(0, 128, 0, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;'>
+                    <div><strong>Data:</strong> {date_str}</div>
+                    <div><strong>Categoria:</strong> {category}</div>
+                    <div><strong>Descrição:</strong> {description}</div>
+                    <div><strong>Valor:</strong> R$ {amount:.2f}</div>
                 </div>
                 """, unsafe_allow_html=True)
-        
-        # Display expense transactions
-        if not expense_df.empty:
-            st.markdown("<h4 style='font-size: 18px; color: white;'>Saídas</h4>", unsafe_allow_html=True)
-            for _, row in expense_df.iterrows():
+            else:
                 st.markdown(f"""
-                <div style="
-                    background-color: #1E1E1E;
-                    border-left: 4px solid #ff4b4b;
-                    padding: 1rem;
-                    margin: 0.5rem 0;
-                    border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #CCCCCC;">{row['Date']}</span>
-                        <span style="font-weight: 500; color: #FFFFFF;">{row['Amount']}</span>
-                    </div>
-                    <div style="margin-bottom: 0.5rem;">
-                        <span style="background-color: rgba(255, 75, 75, 0.2); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9em; color: #FFFFFF;">
-                            {row['Category']}
-                        </span>
-                    </div>
-                    <div style="color: #FFFFFF; margin-top: 0.5rem;">
-                        {row['Description']}
-                    </div>
+                <div style='background-color: rgba(255, 0, 0, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;'>
+                    <div><strong>Data:</strong> {date_str}</div>
+                    <div><strong>Categoria:</strong> {category}</div>
+                    <div><strong>Descrição:</strong> {description}</div>
+                    <div><strong>Valor:</strong> R$ {amount:.2f}</div>
                 </div>
                 """, unsafe_allow_html=True)
         
         # Calculate summary statistics
-        summary = get_period_summary(df)
+        total_income = sum(float(t.get("Amount", 0) or t.get("amount", 0)) 
+                          for t in period_transactions 
+                          if (t.get("Type", "") or t.get("type", "")) == TransactionType.INCOME.value)
         
-        # Show summary statistics
-        st.write("")
-        st.markdown(f"""
-        <div style="margin: 20px 0;">
-            <div style="margin-bottom: 15px;">
-                <span style="font-size: 20px; color: white; font-weight: 500;">Resumo:</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Total Entradas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary.get('total_income', 0))}</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Total Saídas: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(summary.get('total_expense', 0))}</span>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <span style="font-size: 16px; color: white;">Saldo: </span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">{format_currency(abs(summary.get('net_amount', 0)))}</span>
-                <span style="font-size: 16px; color: white !important; font-weight: 500;">({'A entregar' if summary.get('net_amount', 0) >= 0 else 'A receber'})</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        total_expenses = sum(float(t.get("Amount", 0) or t.get("amount", 0)) 
+                            for t in period_transactions 
+                            if (t.get("Type", "") or t.get("type", "")) == TransactionType.EXPENSE.value)
         
-        # Generate report button
+        net_amount = total_income - total_expenses
+        
+        # Display summary
+        st.write("### Resumo do período")
+        st.write(f"**Total de receitas:** R$ {total_income:.2f}")
+        st.write(f"**Total de despesas:** R$ {total_expenses:.2f}")
+        st.write(f"**Saldo:** R$ {net_amount:.2f}")
+        
+        # Submit button
         if st.button("Submeter Relatório"):
-            # Verificar se a data final é igual ou anterior à data atual
-            today = datetime.now().date()
+            # Validate submission
+            today = datetime.date.today()
             
-            # Convert current_end_date to datetime object if it's a string
-            current_end_date = st.session_state.current_end_date
-            if isinstance(current_end_date, str):
-                try:
-                    current_end_date = datetime.strptime(current_end_date, '%Y-%m-%d').date()
-                except ValueError:
-                    # Try alternative format
-                    current_end_date = datetime.strptime(current_end_date, '%d/%m/%Y').date()
+            # Check if end date is in the future
+            if end_date > today:
+                st.error("Não é possível submeter relatórios para períodos futuros.")
+                return
             
-            if current_end_date > today:
-                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({current_end_date.strftime('%Y-%m-%d')}) deve ser igual ou anterior à data atual ({today.strftime('%Y-%m-%d')}).")
-            # Verificar se a data final é anterior a 09/02/2025
-            elif current_end_date < datetime.strptime("09/02/2025", "%d/%m/%Y").date():
-                st.error("Não é possível submeter o relatório ainda. O relatório só pode ser submetido a partir de 09/02/2025.")
-            else:
-                # Create a unique report number based on the current date
-                report_number = f"Relatório {st.session_state.report_counter}"
-                st.session_state.report_counter += 1
-                
-                # Create a report object
-                # Convert dates to datetime objects if they're strings
-                current_start_date = st.session_state.current_start_date
-                if isinstance(current_start_date, str):
-                    try:
-                        current_start_date = datetime.strptime(current_start_date, '%Y-%m-%d').date()
-                    except ValueError:
-                        current_start_date = datetime.strptime(current_start_date, '%d/%m/%Y').date()
-                
-                report = {
-                    "number": report_number,
-                    "period": f"{current_start_date.strftime('%Y-%m-%d')} a {current_end_date.strftime('%Y-%m-%d')}",
-                    "transactions": df.to_dict("records"),
-                    "summary": summary,
-                    'start_date': current_start_date.strftime('%Y-%m-%d'),
-                    'end_date': current_end_date.strftime('%Y-%m-%d')
-                }
-                
-                # Converter para tipos serializáveis
-                report = convert_to_serializable(report)
-                print(f"DEBUG - Created report: {report['number']}")
-                
-                # Add to history
-                if "history" not in st.session_state:
-                    st.session_state.history = []
-                    print("DEBUG - Initialized empty history list")
-                
-                print(f"DEBUG - Before adding report, history has {len(st.session_state.history)} items")
-                st.session_state.history.append(report)
-                print(f"DEBUG - After adding report, history has {len(st.session_state.history)} items")
-                
-                # Save history to file
-                print(f"DEBUG - Saving history with {len(st.session_state.history)} items")
-                save_user_history(st.session_state.username, st.session_state.history)
-                
-                # Remover transações do período atual
-                if st.session_state.transactions:
-                    # Filtrar transações para manter apenas as que não estão no período atual
-                    # ou que não possuem a chave 'date'
-                    filtered_transactions = []
-                    for t in st.session_state.transactions:
-                        # Verificar se a transação tem a chave 'date' ou 'Date'
-                        date_key = None
-                        if "date" in t:
-                            date_key = "date"
-                        elif "Date" in t:
-                            date_key = "Date"
-                            
-                        if date_key is None:
-                            # Se não tiver nenhuma chave de data, manter a transação
-                            filtered_transactions.append(t)
-                            print(f"Transação sem data encontrada: {t}")
-                            continue
-                            
-                        # Converter a data da transação para objeto date
-                        try:
-                            transaction_date = datetime.strptime(t[date_key], "%Y-%m-%d").date()
-                            
-                            # Ensure current_start_date and current_end_date are datetime objects
-                            period_start = current_start_date  # Already converted above
-                            period_end = current_end_date  # Already converted above
-                            
-                            # Verificar se a data está fora do período atual
-                            if not (transaction_date >= period_start and 
-                                   transaction_date <= period_end):
-                                filtered_transactions.append(t)
-                        except (ValueError, TypeError) as e:
-                            # Se houver erro ao converter a data, manter a transação
-                            filtered_transactions.append(t)
-                            print(f"Erro ao processar data da transação: {t}, erro: {str(e)}")
-                    
-                    # Atualizar as transações
-                    st.session_state.transactions = filtered_transactions
-                    # Salvar transações atualizadas
-                    save_user_transactions(st.session_state.username, st.session_state.transactions)
-                
-                # Update to next week's dates
-                next_start, next_end = get_next_week_dates(current_end_date)  # Using the already converted current_end_date
-                st.session_state.current_start_date = next_start
-                st.session_state.current_end_date = next_end
-                
-                # Save the updated dates
-                save_user_dates(
-                    st.session_state.username, 
-                    st.session_state.current_start_date, 
-                    st.session_state.current_end_date,
-                    st.session_state.report_counter
-                )
-                
-                # Auto-save all user data
-                auto_save_user_data()
-                
-                # Mostrar mensagem de sucesso
-                st.success("Relatório submetido com sucesso!")
-                
-                # Forçar recarregamento da página para atualizar as abas
-                st.rerun()
+            # Check if end date is before a specific date (e.g., 09/02/2025)
+            specific_date = datetime.date(2025, 2, 9)
+            if end_date < specific_date:
+                st.error(f"Não é possível submeter relatórios para períodos anteriores a {specific_date.strftime('%d/%m/%Y')}.")
+                return
+            
+            # Generate report number
+            report_number = f"REL{st.session_state.report_counter:03d}"
+            
+            # Create report object
+            report = {
+                "number": report_number,
+                "period": format_date_range(start_date, end_date),
+                "transactions": period_transactions,
+                "summary": {
+                    "total_income": total_income,
+                    "total_expenses": total_expenses,
+                    "net_amount": net_amount
+                },
+                "submission_date": today.strftime('%d/%m/%Y')
+            }
+            
+            # Initialize history if it doesn't exist
+            if "history" not in st.session_state:
+                print("DEBUG - Initializing history list")
+                st.session_state.history = []
+            
+            # Debug print before adding report
+            print(f"DEBUG - History before adding report: {len(st.session_state.history)} items")
+            print(f"DEBUG - History type: {type(st.session_state.history)}")
+            
+            # Append report to history
+            st.session_state.history.append(report)
+            
+            # Debug print after adding report
+            print(f"DEBUG - History after adding report: {len(st.session_state.history)} items")
+            print(f"DEBUG - Report added: {report_number}")
+            
+            # Save history to file
+            save_user_history(st.session_state.username, st.session_state.history)
+            
+            # Increment report counter
+            st.session_state.report_counter += 1
+            
+            # Get next period dates
+            next_start_date, next_end_date = get_next_week_dates(end_date)
+            
+            # Update session state with next period dates
+            st.session_state.start_date = next_start_date
+            st.session_state.end_date = next_end_date
+            
+            # Save updated dates
+            save_user_dates(
+                st.session_state.username, 
+                st.session_state.start_date, 
+                st.session_state.end_date,
+                st.session_state.report_counter
+            )
+            
+            # Auto-save all user data
+            auto_save_user_data()
+            
+            # Show success message
+            st.success(f"Relatório {report_number} submetido com sucesso!")
+            
+            # Force rerun to update the UI
+            st.rerun()
     else:
-        st.info("Não há transações registradas para o período atual.")
+        st.info("Não há transações para o período atual.")
 
 def convert_to_serializable(obj):
     """Convert complex data types to JSON serializable types"""

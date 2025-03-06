@@ -49,10 +49,58 @@ def format_currency(amount):
     return f"€{amount:.2f}"
 
 def create_transaction_df(transactions):
-    """Create a pandas DataFrame from transactions list."""
+    """Create a pandas DataFrame from transactions list, handling different key formats."""
     if not transactions:
         return pd.DataFrame(columns=["Date", "Type", "Category", "Description", "Amount"])
-    return pd.DataFrame(transactions)
+    
+    # Normalize transaction keys
+    normalized_transactions = []
+    for t in transactions:
+        normalized = {}
+        
+        # Handle Date/date
+        if "Date" in t:
+            normalized["Date"] = t["Date"]
+        elif "date" in t:
+            normalized["Date"] = t["date"]
+        else:
+            normalized["Date"] = "Unknown"
+            
+        # Handle Type/type
+        if "Type" in t:
+            normalized["Type"] = t["Type"]
+        elif "type" in t:
+            normalized["Type"] = t["type"]
+        else:
+            normalized["Type"] = "Unknown"
+            
+        # Handle Category/category
+        if "Category" in t:
+            normalized["Category"] = t["Category"]
+        elif "category" in t:
+            normalized["Category"] = t["category"]
+        else:
+            normalized["Category"] = "Unknown"
+            
+        # Handle Description/description
+        if "Description" in t:
+            normalized["Description"] = t["Description"]
+        elif "description" in t:
+            normalized["Description"] = t["description"]
+        else:
+            normalized["Description"] = ""
+            
+        # Handle Amount/amount
+        if "Amount" in t:
+            normalized["Amount"] = float(t["Amount"])
+        elif "amount" in t:
+            normalized["Amount"] = float(t["amount"])
+        else:
+            normalized["Amount"] = 0.0
+            
+        normalized_transactions.append(normalized)
+    
+    return pd.DataFrame(normalized_transactions)
 
 def get_period_summary(df):
     """Calculate summary statistics for a period."""
