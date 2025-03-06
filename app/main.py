@@ -232,17 +232,27 @@ def show_login_page():
                     st.session_state.username = username
                     st.session_state.is_admin = username == "admin"
                     
+                    print(f"DEBUG - Login successful for user: {username}")
+                    print(f"DEBUG - Is admin: {st.session_state.is_admin}")
+                    
                     # Load user data
+                    print(f"DEBUG - Loading user data for: {username}")
+                    
                     if "transactions" not in st.session_state:
+                        print("DEBUG - Loading transactions")
                         st.session_state.transactions = load_user_transactions(username)
+                        print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
                     
                     if "history" not in st.session_state:
+                        print("DEBUG - Loading history")
                         st.session_state.history = load_user_history(username)
+                        print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
                     
                     if "history" not in st.session_state:
                         st.session_state.history = []
                 
                     st.session_state.user_data_loaded = True
+                    print("DEBUG - User data loaded flag set to True")
                 
                     # Show updated session state
                     # st.write("Debug - Updated session state:", {k: v for k, v in st.session_state.items() if k not in ['login_password']})
@@ -1176,8 +1186,16 @@ def save_transaction(date, type_, category, description, amount):
 def get_user_data_dir():
     """Get the directory for user data"""
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "users")
+    print(f"DEBUG - User data directory: {data_dir}")
+    print(f"DEBUG - Current working directory: {os.getcwd()}")
+    print(f"DEBUG - __file__: {__file__}")
+    print(f"DEBUG - Directory exists: {os.path.exists(data_dir)}")
     if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
+        try:
+            os.makedirs(data_dir)
+            print(f"DEBUG - Created directory: {data_dir}")
+        except Exception as e:
+            print(f"DEBUG - Error creating directory: {str(e)}")
     return data_dir
 
 def get_user_dir(username):
@@ -1190,16 +1208,24 @@ def get_user_dir(username):
 def save_user_transactions(username, transactions):
     """Save user transactions to a JSON file"""
     if not username:
+        print("DEBUG - No username provided, skipping save_user_transactions")
         return
     
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
+    print(f"DEBUG - Saving transactions to: {transactions_file}")
+    print(f"DEBUG - Number of transactions: {len(transactions)}")
     
     # Converter todos os valores numpy antes da serialização
     transactions_converted = convert_to_serializable(transactions)
     
-    with open(transactions_file, "w") as f:
-        json.dump(transactions_converted, f)
+    try:
+        with open(transactions_file, "w") as f:
+            json.dump(transactions_converted, f)
+        print(f"DEBUG - Successfully saved transactions to: {transactions_file}")
+    except Exception as e:
+        print(f"DEBUG - Error saving transactions: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
 
 def save_user_dates(username, start_date, end_date, report_counter=1):
     """Save user date range and report counter to a JSON file"""
@@ -1310,52 +1336,72 @@ def safe_load_json(file_path, backup_prefix, default_value=None):
 def load_user_transactions(username):
     """Load user transactions from a JSON file"""
     if not username:
+        print("DEBUG - No username provided, skipping load_user_transactions")
         return []
     
     user_dir = get_user_dir(username)
     transactions_file = os.path.join(user_dir, "transactions.json")
+    print(f"DEBUG - Loading transactions from: {transactions_file}")
+    print(f"DEBUG - File exists: {os.path.exists(transactions_file)}")
     
-    transactions = safe_load_json(transactions_file, "corrupted_transactions")
+    if os.path.exists(transactions_file):
+        try:
+            with open(transactions_file, "r") as f:
+                transactions = json.load(f)
+            print(f"DEBUG - Successfully loaded {len(transactions)} transactions")
+            return transactions
+        except Exception as e:
+            print(f"DEBUG - Error loading transactions: {str(e)}")
+            print(f"DEBUG - Traceback: {traceback.format_exc()}")
     
-    # Garantir que as datas estão no formato correto
-    for transaction in transactions:
-        if "date" in transaction and not isinstance(transaction["date"], str):
-            transaction["date"] = convert_to_serializable(transaction["date"])
-    
-    return transactions
+    print("DEBUG - No transactions file found, returning empty list")
+    return []
 
 def load_user_history(username):
     """Load user history from a JSON file"""
     if not username:
+        print("DEBUG - No username provided, skipping load_user_history")
         return []
     
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
+    print(f"DEBUG - Loading history from: {history_file}")
+    print(f"DEBUG - File exists: {os.path.exists(history_file)}")
     
-    history = safe_load_json(history_file, "corrupted_history")
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r") as f:
+                history = json.load(f)
+            print(f"DEBUG - Successfully loaded {len(history)} history items")
+            return history
+        except Exception as e:
+            print(f"DEBUG - Error loading history: {str(e)}")
+            print(f"DEBUG - Traceback: {traceback.format_exc()}")
     
-    # Garantir que as datas estão no formato correto
-    for report in history:
-        if "start_date" in report and not isinstance(report["start_date"], str):
-            report["start_date"] = convert_to_serializable(report["start_date"])
-        if "end_date" in report and not isinstance(report["end_date"], str):
-            report["end_date"] = convert_to_serializable(report["end_date"])
-    
-    return history
+    print("DEBUG - No history file found, returning empty list")
+    return []
 
 def save_user_history(username, history):
     """Save user history to a JSON file"""
     if not username:
+        print("DEBUG - No username provided, skipping save_user_history")
         return
     
     user_dir = get_user_dir(username)
     history_file = os.path.join(user_dir, "history.json")
+    print(f"DEBUG - Saving history to: {history_file}")
+    print(f"DEBUG - Number of history items: {len(history)}")
     
     # Converter todos os valores numpy antes da serialização
     history_converted = convert_to_serializable(history)
     
-    with open(history_file, "w") as f:
-        json.dump(history_converted, f)
+    try:
+        with open(history_file, "w") as f:
+            json.dump(history_converted, f)
+        print(f"DEBUG - Successfully saved history to: {history_file}")
+    except Exception as e:
+        print(f"DEBUG - Error saving history: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
 
 def generate_pdf_report(username, report_data):
     """Generate a PDF report for a user's expense report"""
@@ -1513,11 +1559,33 @@ def main():
     # Add logout button
     if st.sidebar.button("Logout"):
         # Save user data before logging out
+        print(f"DEBUG - Logout initiated for user: {st.session_state.username}")
+        print(f"DEBUG - Session state before logout: {list(st.session_state.keys())}")
+        
         try:
-            if hasattr(st.session_state, "transactions") and hasattr(st.session_state, "history"):
+            if "transactions" in st.session_state:
+                print(f"DEBUG - Saving {len(st.session_state.transactions)} transactions before logout")
                 save_user_transactions(st.session_state.username, st.session_state.transactions)
+            else:
+                print("DEBUG - No transactions in session state to save")
+                
+            if "history" in st.session_state:
+                print(f"DEBUG - Saving {len(st.session_state.history)} history items before logout")
                 save_user_history(st.session_state.username, st.session_state.history)
+            else:
+                print("DEBUG - No history in session state to save")
+                
+            if "current_start_date" in st.session_state and "current_end_date" in st.session_state:
+                print(f"DEBUG - Saving dates before logout: {st.session_state.current_start_date} to {st.session_state.current_end_date}")
+                save_user_dates(
+                    st.session_state.username, 
+                    st.session_state.current_start_date, 
+                    st.session_state.current_end_date,
+                    st.session_state.get("report_counter", 1)
+                )
         except Exception as e:
+            print(f"DEBUG - Error saving data during logout: {str(e)}")
+            print(f"DEBUG - Traceback: {traceback.format_exc()}")
             st.sidebar.error(f"Error saving data: {str(e)}")
         
         # Clear session state
@@ -2109,13 +2177,19 @@ def show_report_tab():
                 
                 # Converter para tipos serializáveis
                 report = convert_to_serializable(report)
+                print(f"DEBUG - Created report: {report['number']}")
                 
                 # Add to history
                 if "history" not in st.session_state:
                     st.session_state.history = []
+                    print("DEBUG - Initialized empty history list")
+                
+                print(f"DEBUG - Before adding report, history has {len(st.session_state.history)} items")
                 st.session_state.history.append(report)
+                print(f"DEBUG - After adding report, history has {len(st.session_state.history)} items")
                 
                 # Save history to file
+                print(f"DEBUG - Saving history with {len(st.session_state.history)} items")
                 save_user_history(st.session_state.username, st.session_state.history)
                 
                 # Remover transações do período atual
