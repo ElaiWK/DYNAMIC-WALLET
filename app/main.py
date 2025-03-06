@@ -601,15 +601,15 @@ def show_login_page():
         # Login form
         st.subheader("Login")
         with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            submit_button = st.form_submit_button("Login")
+            username = st.text_input("Nome de usuário")
+            password = st.text_input("Senha", type="password")
+            submit_button = st.form_submit_button("Entrar")
             
             if submit_button:
-                st.write(f"Attempting login for user: {username}")
+                st.write(f"Tentando login para usuário: {username}")
                 
                 if authenticate(username, password):
-                    st.success(f"Login successful! Welcome, {username}!")
+                    st.success(f"Login bem-sucedido! Bem-vindo, {username}!")
                     
                     # Set session state
                     st.session_state.authenticated = True
@@ -655,7 +655,7 @@ def show_login_page():
                     st.session_state.page = "main"
                     st.rerun()
                 else:
-                    st.error("Invalid username or password")
+                    st.error("Nome de usuário ou senha inválidos")
 
 def get_week_dates(date):
     # Get Monday (start) of the week
@@ -819,14 +819,57 @@ def show_home_button():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def show_main_page():
+    """Show the main page with navigation sidebar"""
     # Debug message
-    st.write("DEBUG: show_main_page function called")
+    print("DEBUG - show_main_page function called")
+    
+    # Add sidebar for navigation
+    with st.sidebar:
+        st.title("Navegação")
+        
+        # User info
+        st.write(f"Logado como: **{st.session_state.username}**")
+        
+        # Navigation tabs
+        if st.button("Início", use_container_width=True):
+            st.session_state.page = "main"
+            st.rerun()
+            
+        if st.button("Histórico", use_container_width=True):
+            st.session_state.page = "history"
+            st.rerun()
+            
+        if st.button("Relatório", use_container_width=True):
+            st.session_state.page = "report"
+            st.rerun()
+            
+        # Show admin tab only for admin users
+        if st.session_state.is_admin:
+            if st.button("Admin", use_container_width=True):
+                st.session_state.page = "admin"
+                st.rerun()
+        
+        # Add some space
+        st.write("")
+        st.write("")
+        st.write("")
+        
+        # Logout button at the bottom
+        if st.button("Sair", use_container_width=True):
+            # Reset session state
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            
+            # Set default values
+            st.session_state.authenticated = False
+            st.session_state.page = "login"
+            st.rerun()
     
     # Center the title without icon
     st.markdown(f"""
         <h1 style="text-align: center; margin-bottom: 10px;">DYNAMIC WALLET</h1>
         <div style="text-align: center; font-size: 16px; color: #888888; margin-bottom: 40px;">
-            {format_date_range(st.session_state.current_start_date, st.session_state.current_end_date)}
+            {format_date_range(st.session_state.start_date, st.session_state.end_date)}
         </div>
         <style>
         .amount-title {{
@@ -856,7 +899,7 @@ def show_main_page():
     """, unsafe_allow_html=True)
     
     # Check if submission is late
-    if is_submission_late(st.session_state.current_end_date):
+    if is_submission_late(st.session_state.end_date):
         st.markdown("""
             <div style="text-align: center; color: #ff4b4b; font-size: 18px; margin-bottom: 20px; padding: 10px; border: 1px solid #ff4b4b; border-radius: 5px;">
                 ⚠️ Submissão de relatório em atraso!
@@ -900,298 +943,35 @@ def show_main_page():
     """, unsafe_allow_html=True)
 
 def show_categories():
+    """Show the categories page"""
     # Back button in categories
-    st.markdown('<div class="corner-button">', unsafe_allow_html=True)
-    if st.button("← Voltar", key="back_button"):
-        navigate_back()
-    st.markdown('</div>', unsafe_allow_html=True)
+    show_home_button()
+    st.subheader("Categorias")
+    st.write("Selecione uma categoria para registrar uma transação:")
     
-    st.subheader("Selecione a Categoria")
-    
-    categories = (
-        [cat.value for cat in ExpenseCategory] 
-        if st.session_state.transaction_type == TransactionType.EXPENSE.value
-        else [cat.value for cat in IncomeCategory]
-    )
-    
-    # Add custom CSS for category buttons
-    st.markdown("""
-        <style>
-        .stButton > button {
-            width: 100%;
-            margin: 2px 0;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # Display category buttons
-    for idx, category in enumerate(categories):
-        if st.button(category, key=f"category_{idx}", use_container_width=True):
-            navigate_to_form(category)
+    # Add buttons for different transaction types
+    if st.button("Saídas"):
+        st.session_state.category = ExpenseCategory.OTHER.value
+        navigate_to_form(ExpenseCategory.OTHER.value)
+    if st.button("Saídas"):
+        st.session_state.category = ExpenseCategory.HR.value
+        navigate_to_form(ExpenseCategory.HR.value)
+    if st.button("Saídas"):
+        st.session_state.category = ExpenseCategory.DELIVERY.value
+        navigate_to_form(ExpenseCategory.DELIVERY.value)
+    if st.button("Entradas"):
+        st.session_state.category = IncomeCategory.SERVICE.value
+        navigate_to_form(IncomeCategory.SERVICE.value)
+    if st.button("Entradas"):
+        st.session_state.category = IncomeCategory.DELIVERY.value
+        navigate_to_form(IncomeCategory.DELIVERY.value)
 
 def show_form():
-    # Add global CSS for amount display in forms
-    st.markdown("""
-        <style>
-        .amount-title {
-            color: #FFFFFF;
-            text-align: center;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        .amount-container {
-            background-color: #262730;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px 0;
-            text-align: center;
-        }
-        .amount-container .value {
-            color: #FFFFFF;
-            font-size: 24px;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        .amount-container .status {
-            color: #888888;
-            font-size: 16px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    """Show the form page"""
+    st.subheader("Registrar Transação")
     
-    # Back button in form
-    st.markdown('<div class="corner-button">', unsafe_allow_html=True)
-    if st.button("← Voltar para Categorias", key="back_to_categories"):
-        navigate_back()
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.subheader(f"{'Saída' if st.session_state.transaction_type == TransactionType.EXPENSE.value else 'Entrada'} - {st.session_state.category}")
-    
-    if st.session_state.category == ExpenseCategory.MEAL.value:
-        # Initialize session state for meal form
-        if "meal_total_amount" not in st.session_state:
-            st.session_state.meal_total_amount = 0.0
-        if "meal_num_people" not in st.session_state:
-            st.session_state.meal_num_people = 1
-        if "collaborator_names" not in st.session_state:
-            st.session_state.collaborator_names = [""]
-        if "meal_date" not in st.session_state:
-            st.session_state.meal_date = st.session_state.current_start_date
-        
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.meal_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="meal_date_input"
-        )
-        if selected_date != st.session_state.meal_date:
-            st.session_state.meal_date = selected_date
-            st.rerun()
-        
-        # Create two columns for the main inputs
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            new_total_amount = st.number_input(
-                "Valor da Fatura (€)", 
-                min_value=0.0, 
-                step=0.5,
-                value=st.session_state.meal_total_amount,
-                key="total_amount_input"
-            )
-            if new_total_amount != st.session_state.meal_total_amount:
-                st.session_state.meal_total_amount = new_total_amount
-                st.rerun()
-        
-        with col2:
-            new_num_people = st.number_input(
-                "Número de Colaboradores", 
-                min_value=1, 
-                step=1,
-                value=st.session_state.meal_num_people,
-                key="num_people_input"
-            )
-            if new_num_people != st.session_state.meal_num_people:
-                st.session_state.meal_num_people = new_num_people
-                # Update collaborator names list
-                if len(st.session_state.collaborator_names) < new_num_people:
-                    st.session_state.collaborator_names.extend([""] * (new_num_people - len(st.session_state.collaborator_names)))
-                else:
-                    st.session_state.collaborator_names = st.session_state.collaborator_names[:new_num_people]
-                st.rerun()
-        
-        meal_type = st.selectbox("Tipo", [meal.value for meal in MealType])
-        
-        # Collaborator name fields
-        for i in range(st.session_state.meal_num_people):
-            st.session_state.collaborator_names[i] = st.text_input(
-                f"Colaborador {i+1}", 
-                value=st.session_state.collaborator_names[i],
-                key=f"collaborator_{i}"
-            )
-        
-        # Create description with collaborator names
-        names_str = ", ".join(st.session_state.collaborator_names) if all(st.session_state.collaborator_names) else f"{st.session_state.meal_num_people} colaboradores"
-        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)})"
-
-        # Add more spacing after collaborator fields
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Calculate and always display amount for meals
-        calculated_amount = 0
-        if st.session_state.meal_total_amount > 0 and st.session_state.meal_num_people > 0:
-            calculated_amount, _ = calculate_meal_expense(
-                st.session_state.meal_total_amount, 
-                st.session_state.meal_num_people, 
-                meal_type
-            )
-        
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="amount-container">
-            <div class="value">{format_currency(calculated_amount)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.write("")  # Add space before submit button
-        
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_meal", use_container_width=True):
-                # Validate all fields are filled
-                validation_error = None
-                if st.session_state.meal_total_amount <= 0:
-                    validation_error = "Por favor, insira um valor válido para a fatura"
-                elif not all(name.strip() for name in st.session_state.collaborator_names):
-                    validation_error = "Por favor, preencha os nomes de todos os colaboradores"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    amount, error = calculate_meal_expense(
-                        st.session_state.meal_total_amount, 
-                        st.session_state.meal_num_people, 
-                        meal_type
-                    )
-                    if not error:
-                        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)})"
-                        save_transaction(
-                            st.session_state.meal_date,
-                            TransactionType.EXPENSE.value, 
-                            ExpenseCategory.MEAL.value, 
-                            description, 
-                            amount
-                        )
-                        st.success("Transação registrada com sucesso!")
-                        # Reset form state
-                        del st.session_state.meal_total_amount
-                        del st.session_state.meal_num_people
-                        del st.session_state.collaborator_names
-                        del st.session_state.meal_date
-                        st.session_state.page = "main"
-                        st.rerun()
-                    else:
-                        st.error(error)
-            st.markdown('</div>', unsafe_allow_html=True)
-    
-    elif st.session_state.category == ExpenseCategory.HR.value:
-        # Initialize session state for HR form
-        if "hr_role" not in st.session_state:
-            st.session_state.hr_role = ""
-        if "hr_collaborator" not in st.session_state:
-            st.session_state.hr_collaborator = ""
-        if "hr_date" not in st.session_state:
-            st.session_state.hr_date = st.session_state.current_start_date
-        
-        # Date input at the top
-        selected_date = st.date_input(
-            "Data",
-            value=st.session_state.hr_date,
-            min_value=st.session_state.current_start_date,
-            max_value=st.session_state.current_end_date,
-            key="hr_date_input"
-        )
-        if selected_date != st.session_state.hr_date:
-            st.session_state.hr_date = selected_date
-            st.rerun()
-        
-        # Collaborator name field
-        new_collaborator = st.text_input(
-            "Nome do Colaborador",
-            value=st.session_state.hr_collaborator,
-            key="hr_collaborator_input"
-        )
-        if new_collaborator != st.session_state.hr_collaborator:
-            st.session_state.hr_collaborator = new_collaborator
-            st.rerun()
-        
-        # Role selection
-        new_role = st.selectbox(
-            "Função",
-            options=list(HR_RATES.keys()),
-            key="hr_role_input"
-        )
-        if new_role != st.session_state.hr_role:
-            st.session_state.hr_role = new_role
-            st.rerun()
-        
-        # Add spacing
-        st.write("")
-        st.write("")
-        st.write("")
-        
-        # Calculate and always display amount for HR
-        amount = HR_RATES.get(st.session_state.hr_role, 0)
-        st.markdown('<div class="amount-title">Valor</div>', unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="amount-container">
-            <div class="value">{format_currency(amount)}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("")  # Add space before submit button
-        
-        # Add submit button
-        submit_button_container = st.container()
-        with submit_button_container:
-            st.markdown('<div class="meal-submit-button">', unsafe_allow_html=True)
-            if st.button("Submeter", key="submit_hr", use_container_width=True):
-                # Validate fields
-                validation_error = None
-                if not st.session_state.hr_collaborator.strip():
-                    validation_error = "Por favor, insira o nome do colaborador"
-                elif not st.session_state.hr_role:
-                    validation_error = "Por favor, selecione uma função"
-                elif HR_RATES[st.session_state.hr_role] <= 0:
-                    validation_error = "Por favor, selecione uma função válida"
-                
-                if validation_error:
-                    st.error(validation_error)
-                else:
-                    description = f"{st.session_state.hr_collaborator} - {st.session_state.hr_role} (Taxa: {format_currency(HR_RATES[st.session_state.hr_role])})"
-                    save_transaction(
-                        st.session_state.hr_date,
-                        TransactionType.EXPENSE.value,
-                        ExpenseCategory.HR.value,
-                        description,
-                        HR_RATES[st.session_state.hr_role]
-                    )
-                    st.success("Transação registrada com sucesso!")
-                    # Reset form state
-                    del st.session_state.hr_role
-                    del st.session_state.hr_collaborator
-                    del st.session_state.hr_date
-                    st.session_state.page = "main"
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-    
-    elif st.session_state.category == ExpenseCategory.OTHER.value:
+    # Add form for different transaction types
+    if st.session_state.category == ExpenseCategory.OTHER.value:
         # Initialize session state for purchase form
         if "purchase_what" not in st.session_state:
             st.session_state.purchase_what = ""
