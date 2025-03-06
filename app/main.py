@@ -20,6 +20,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 import traceback
 import hmac
+import sqlite3  # Add SQLite import
 
 from constants.config import (
     TransactionType,
@@ -55,6 +56,108 @@ if 'username' not in st.session_state:
     st.session_state.username = None
 if 'user_data_loaded' not in st.session_state:
     st.session_state.user_data_loaded = False
+
+# Initialize SQLite database
+def init_db():
+    """Initialize the SQLite database with required tables"""
+    conn = sqlite3.connect('dynamic_wallet.db')
+    c = conn.cursor()
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS user_data
+    (username TEXT, data_type TEXT, data TEXT, 
+    PRIMARY KEY (username, data_type))
+    ''')
+    conn.commit()
+    conn.close()
+    print("DEBUG - SQLite database initialized")
+
+def save_user_data(username, data_type, data):
+    """Save user data to SQLite database"""
+    if not username:
+        print(f"DEBUG - No username provided, skipping save_user_data for {data_type}")
+        return
+        
+    print(f"DEBUG - Saving {data_type} for user {username}")
+    
+    # Convert data to JSON string
+    data_converted = convert_to_serializable(data)
+    data_json = json.dumps(data_converted)
+    
+    try:
+        conn = sqlite3.connect('dynamic_wallet.db')
+        c = conn.cursor()
+        c.execute("REPLACE INTO user_data VALUES (?, ?, ?)",
+                (username, data_type, data_json))
+        conn.commit()
+        conn.close()
+        print(f"DEBUG - Successfully saved {data_type} for user {username}")
+    except Exception as e:
+        print(f"DEBUG - Error saving {data_type}: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+
+def load_user_data(username, data_type, default=None):
+    """Load user data from SQLite database"""
+    if not username:
+        print(f"DEBUG - No username provided, skipping load_user_data for {data_type}")
+        return default or []
+        
+    print(f"DEBUG - Loading {data_type} for user {username}")
+    
+    if default is None:
+        default = []
+        
+    try:
+        conn = sqlite3.connect('dynamic_wallet.db')
+        c = conn.cursor()
+        c.execute("SELECT data FROM user_data WHERE username=? AND data_type=?",
+                (username, data_type))
+        result = c.fetchone()
+        conn.close()
+        
+        if result:
+            data = json.loads(result[0])
+            print(f"DEBUG - Successfully loaded {data_type} for user {username}")
+            return data
+        else:
+            print(f"DEBUG - No {data_type} found for user {username}")
+            return default
+    except Exception as e:
+        print(f"DEBUG - Error loading {data_type}: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        return default
+
+# Replace file-based functions with SQLite functions
+def save_user_transactions(username, transactions):
+    """Save user transactions to SQLite database"""
+    save_user_data(username, 'transactions', transactions)
+
+def load_user_transactions(username):
+    """Load user transactions from SQLite database"""
+    return load_user_data(username, 'transactions', [])
+
+def save_user_history(username, history):
+    """Save user history to SQLite database"""
+    save_user_data(username, 'history', history)
+
+def load_user_history(username):
+    """Load user history from SQLite database"""
+    return load_user_data(username, 'history', [])
+
+def save_user_dates(username, start_date, end_date, report_counter=1):
+    """Save user date range and report counter to SQLite database"""
+    dates_data = {
+        "start_date": start_date,
+        "end_date": end_date,
+        "report_counter": report_counter
+    }
+    save_user_data(username, 'dates', dates_data)
+
+def load_user_dates(username):
+    """Load user date range and report counter from SQLite database"""
+    dates_data = load_user_data(username, 'dates', None)
+    if dates_data:
+        return dates_data.get('start_date'), dates_data.get('end_date'), dates_data.get('report_counter', 1)
+    return None
 
 # User authentication functions
 def get_users_file_path():
@@ -1205,204 +1308,6 @@ def get_user_dir(username):
         os.makedirs(user_dir)
     return user_dir
 
-def save_user_transactions(username, transactions):
-    """Save user transactions to a JSON file"""
-    if not username:
-        print("DEBUG - No username provided, skipping save_user_transactions")
-        return
-    
-    user_dir = get_user_dir(username)
-    transactions_file = os.path.join(user_dir, "transactions.json")
-    print(f"DEBUG - Saving transactions to: {transactions_file}")
-    print(f"DEBUG - Number of transactions: {len(transactions)}")
-    
-    # Converter todos os valores numpy antes da serialização
-    transactions_converted = convert_to_serializable(transactions)
-    
-    try:
-        with open(transactions_file, "w") as f:
-            json.dump(transactions_converted, f)
-        print(f"DEBUG - Successfully saved transactions to: {transactions_file}")
-    except Exception as e:
-        print(f"DEBUG - Error saving transactions: {str(e)}")
-        print(f"DEBUG - Traceback: {traceback.format_exc()}")
-
-def save_user_dates(username, start_date, end_date, report_counter=1):
-    """Save user date range and report counter to a JSON file"""
-    if not username:
-        return
-    
-    user_dir = get_user_dir(username)
-    dates_file = os.path.join(user_dir, "dates.json")
-    
-    dates_data = {
-        "start_date": start_date,
-        "end_date": end_date,
-        "report_counter": report_counter
-    }
-    
-    # Converter todos os valores para tipos serializáveis
-    dates_data_converted = convert_to_serializable(dates_data)
-    
-    with open(dates_file, "w") as f:
-        json.dump(dates_data_converted, f)
-
-def load_user_dates(username):
-    """Load user date range and report counter from a JSON file"""
-    if not username:
-        return None
-    
-    user_dir = get_user_dir(username)
-    dates_file = os.path.join(user_dir, "dates.json")
-    
-    dates_data = safe_load_json(dates_file, "corrupted_dates")
-    if dates_data:
-        # Convert string dates back to datetime objects
-        try:
-            # Tenta diferentes formatos de data
-            start_date_str = dates_data["start_date"]
-            end_date_str = dates_data["end_date"]
-            
-            # Tenta primeiro o formato padrão
-            try:
-                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            except (ValueError, TypeError):
-                # Se falhar, verifica se já é um objeto datetime
-                if isinstance(start_date_str, (datetime, date)):
-                    start_date = start_date_str
-                else:
-                    print(f"Formato de data inválido para start_date: {start_date_str}")
-                    start_date = datetime.now().date()
-            
-            try:
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-            except (ValueError, TypeError):
-                # Se falhar, verifica se já é um objeto datetime
-                if isinstance(end_date_str, (datetime, date)):
-                    end_date = end_date_str
-                else:
-                    print(f"Formato de data inválido para end_date: {end_date_str}")
-                    end_date = datetime.now().date() + timedelta(days=7)
-            
-            report_counter = int(dates_data.get("report_counter", 1))
-            return start_date, end_date, report_counter
-        except Exception as e:
-            print(f"Error converting dates: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
-    
-    return None
-
-def safe_load_json(file_path, backup_prefix, default_value=None):
-    """Safely load JSON data from a file with error handling"""
-    if default_value is None:
-        default_value = []
-        
-    if not os.path.exists(file_path):
-        print(f"Arquivo não encontrado: {file_path}")
-        return default_value
-        
-    try:
-        with open(file_path, "r") as f:
-            data = json.load(f)
-            print(f"Arquivo carregado com sucesso: {file_path}")
-            return data
-    except json.JSONDecodeError as e:
-        # Log the error
-        print(f"Erro ao carregar arquivo JSON {file_path}: {str(e)}")
-        
-        # Backup the corrupted file
-        dir_path = os.path.dirname(file_path)
-        file_name = os.path.basename(file_path)
-        backup_file = os.path.join(dir_path, f"{backup_prefix}_{file_name}_{int(time.time())}")
-        try:
-            shutil.copy2(file_path, backup_file)
-            print(f"Backup do arquivo corrompido criado: {backup_file}")
-        except Exception as backup_error:
-            print(f"Erro ao criar backup: {str(backup_error)}")
-        
-        # Create a new empty file
-        try:
-            with open(file_path, "w") as f:
-                json.dump(default_value, f)
-            print(f"Novo arquivo vazio criado: {file_path}")
-        except Exception as write_error:
-            print(f"Erro ao criar novo arquivo: {str(write_error)}")
-        
-        return default_value
-    except Exception as e:
-        print(f"Erro desconhecido ao carregar arquivo JSON {file_path}: {str(e)}")
-        return default_value
-
-def load_user_transactions(username):
-    """Load user transactions from a JSON file"""
-    if not username:
-        print("DEBUG - No username provided, skipping load_user_transactions")
-        return []
-    
-    user_dir = get_user_dir(username)
-    transactions_file = os.path.join(user_dir, "transactions.json")
-    print(f"DEBUG - Loading transactions from: {transactions_file}")
-    print(f"DEBUG - File exists: {os.path.exists(transactions_file)}")
-    
-    if os.path.exists(transactions_file):
-        try:
-            with open(transactions_file, "r") as f:
-                transactions = json.load(f)
-            print(f"DEBUG - Successfully loaded {len(transactions)} transactions")
-            return transactions
-        except Exception as e:
-            print(f"DEBUG - Error loading transactions: {str(e)}")
-            print(f"DEBUG - Traceback: {traceback.format_exc()}")
-    
-    print("DEBUG - No transactions file found, returning empty list")
-    return []
-
-def load_user_history(username):
-    """Load user history from a JSON file"""
-    if not username:
-        print("DEBUG - No username provided, skipping load_user_history")
-        return []
-    
-    user_dir = get_user_dir(username)
-    history_file = os.path.join(user_dir, "history.json")
-    print(f"DEBUG - Loading history from: {history_file}")
-    print(f"DEBUG - File exists: {os.path.exists(history_file)}")
-    
-    if os.path.exists(history_file):
-        try:
-            with open(history_file, "r") as f:
-                history = json.load(f)
-            print(f"DEBUG - Successfully loaded {len(history)} history items")
-            return history
-        except Exception as e:
-            print(f"DEBUG - Error loading history: {str(e)}")
-            print(f"DEBUG - Traceback: {traceback.format_exc()}")
-    
-    print("DEBUG - No history file found, returning empty list")
-    return []
-
-def save_user_history(username, history):
-    """Save user history to a JSON file"""
-    if not username:
-        print("DEBUG - No username provided, skipping save_user_history")
-        return
-    
-    user_dir = get_user_dir(username)
-    history_file = os.path.join(user_dir, "history.json")
-    print(f"DEBUG - Saving history to: {history_file}")
-    print(f"DEBUG - Number of history items: {len(history)}")
-    
-    # Converter todos os valores numpy antes da serialização
-    history_converted = convert_to_serializable(history)
-    
-    try:
-        with open(history_file, "w") as f:
-            json.dump(history_converted, f)
-        print(f"DEBUG - Successfully saved history to: {history_file}")
-    except Exception as e:
-        print(f"DEBUG - Error saving history: {str(e)}")
-        print(f"DEBUG - Traceback: {traceback.format_exc()}")
-
 def generate_pdf_report(username, report_data):
     """Generate a PDF report for a user's expense report"""
     # Create a BytesIO object to store the PDF
@@ -1496,7 +1401,7 @@ def get_pdf_download_link(pdf_data, filename):
     href = f'''
     <a href="data:application/pdf;base64,{b64}" download="{filename}.pdf" 
        style="display: flex; align-items: center; justify-content: center; 
-              width: 32px; height: 32px; background-color: #4CAF50; 
+              width: 32px; height: 32px; background-color: #1E1E1E; 
               border-radius: 4px; transition: all 0.3s; text-decoration: none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="white"/>
@@ -1531,6 +1436,9 @@ def auto_save_user_data():
             print(f"Traceback: {traceback.format_exc()}")
 
 def main():
+    # Initialize the SQLite database
+    init_db()
+    
     # Debug: Show current authentication state
     # st.write(f"Debug - Authenticated: {st.session_state.get('authenticated', False)}")
     # st.write(f"Debug - Username: {st.session_state.get('username', 'None')}")
@@ -1784,12 +1692,9 @@ def show_admin_tab():
             if history:
                 for report in history:
                     # Create a container for the expander and PDF button
-                    col1, col2 = st.columns([0.9, 0.1])
+                    col1, col2 = st.columns([0.1, 0.9])
                     
                     with col1:
-                        expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
-                    
-                    with col2:
                         # Add PDF download button with a more elegant design
                         report_id = f"{selected_user}_{report['number'].replace(' ', '_')}"
                         
@@ -1797,11 +1702,10 @@ def show_admin_tab():
                         pdf_data = generate_pdf_report(selected_user, report)
                         download_link = get_pdf_download_link(pdf_data, f"Relatorio_{report_id}")
                         
-                        st.markdown(f"""
-                        <div style="margin-top: 8px;">
-                            {download_link}
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(download_link, unsafe_allow_html=True)
+                    
+                    with col2:
+                        expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
                     
                     with expander:
                         # Create DataFrame from transactions
