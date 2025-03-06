@@ -367,44 +367,9 @@ def save_user_dates(username, start_date, end_date, report_counter=1):
         print(f"DEBUG - Error saving dates to file: {str(e)}")
 
 def load_user_dates(username):
-    """Load user date range and report counter from SQLite database with file-based fallback"""
+    """Load user date range and report counter from file"""
     try:
-        # First try to load from SQLite
-        dates_from_db = load_user_data(username, 'dates', None)
-        
-        if dates_from_db:
-            print(f"DEBUG - Successfully loaded dates from SQLite for user {username}")
-            start_date = dates_from_db.get('start_date')
-            end_date = dates_from_db.get('end_date')
-            report_counter = dates_from_db.get('report_counter', 1)
-            
-            # Convert string dates to datetime objects
-            if isinstance(start_date, str):
-                try:
-                    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-                except ValueError:
-                    try:
-                        start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
-                    except ValueError:
-                        print(f"DEBUG - Could not parse start_date: {start_date}")
-                        # Default to today
-                        start_date = datetime.now().date()
-            
-            if isinstance(end_date, str):
-                try:
-                    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-                except ValueError:
-                    try:
-                        end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
-                    except ValueError:
-                        print(f"DEBUG - Could not parse end_date: {end_date}")
-                        # Default to today + 6 days
-                        end_date = datetime.now().date() + timedelta(days=6)
-            
-            return start_date, end_date, report_counter
-        
-        # If SQLite failed or returned empty, try file-based approach
-        print(f"DEBUG - SQLite dates empty, trying file-based approach for {username}")
+        print(f"DEBUG - Loading dates for user {username}")
         user_dir = get_user_dir(username)
         dates_file = os.path.join(user_dir, "dates.json")
         
@@ -413,9 +378,6 @@ def load_user_dates(username):
                 with open(dates_file, 'r') as f:
                     dates_data = json.load(f)
                     print(f"DEBUG - Successfully loaded dates from file for user {username}")
-                    
-                    # Save to SQLite for future use
-                    save_user_data(username, 'dates', dates_data)
                     
                     start_date = dates_data.get('start_date')
                     end_date = dates_data.get('end_date')
@@ -444,17 +406,39 @@ def load_user_dates(username):
                                 # Default to today + 6 days
                                 end_date = datetime.now().date() + timedelta(days=6)
                     
-                    return start_date, end_date, report_counter
+                    return {
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "report_counter": report_counter
+                    }
             except Exception as e:
                 print(f"DEBUG - Error loading dates from file: {str(e)}")
         
-        # If all else fails, return None
-        print(f"DEBUG - No dates found for user {username}")
-        return None
+        # If file doesn't exist or error, return default dates
+        print(f"DEBUG - No dates found for user {username}, using defaults")
+        today = datetime.now().date()
+        start_date = today - timedelta(days=today.weekday())  # Monday of current week
+        end_date = start_date + timedelta(days=6)  # Sunday of current week
+        
+        return {
+            "start_date": start_date,
+            "end_date": end_date,
+            "report_counter": 1
+        }
     except Exception as e:
         print(f"DEBUG - Error in load_user_dates: {str(e)}")
         print(f"DEBUG - Traceback: {traceback.format_exc()}")
-        return None
+        
+        # Return default dates in case of error
+        today = datetime.now().date()
+        start_date = today - timedelta(days=today.weekday())
+        end_date = start_date + timedelta(days=6)
+        
+        return {
+            "start_date": start_date,
+            "end_date": end_date,
+            "report_counter": 1
+        }
 
 # User authentication functions
 def get_users_file_path():
