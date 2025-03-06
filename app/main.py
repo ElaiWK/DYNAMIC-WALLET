@@ -60,16 +60,66 @@ if 'user_data_loaded' not in st.session_state:
 # Initialize SQLite database
 def init_db():
     """Initialize the SQLite database with required tables"""
-    conn = sqlite3.connect('dynamic_wallet.db')
-    c = conn.cursor()
-    c.execute('''
-    CREATE TABLE IF NOT EXISTS user_data
-    (username TEXT, data_type TEXT, data TEXT, 
-    PRIMARY KEY (username, data_type))
-    ''')
-    conn.commit()
-    conn.close()
-    print("DEBUG - SQLite database initialized")
+    try:
+        conn = sqlite3.connect('dynamic_wallet.db')
+        c = conn.cursor()
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS user_data
+        (username TEXT, data_type TEXT, data TEXT, 
+        PRIMARY KEY (username, data_type))
+        ''')
+        conn.commit()
+        
+        # Verify the table exists
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_data'")
+        if not c.fetchone():
+            print("ERROR - Failed to create user_data table")
+        else:
+            print("DEBUG - SQLite database initialized successfully")
+            
+        conn.close()
+    except Exception as e:
+        print(f"ERROR - Failed to initialize database: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+
+def verify_db_integrity():
+    """Verify the integrity of the database and repair if needed"""
+    try:
+        conn = sqlite3.connect('dynamic_wallet.db')
+        c = conn.cursor()
+        
+        # Check if the user_data table exists
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='user_data'")
+        if not c.fetchone():
+            print("WARNING - user_data table not found, recreating...")
+            c.execute('''
+            CREATE TABLE IF NOT EXISTS user_data
+            (username TEXT, data_type TEXT, data TEXT, 
+            PRIMARY KEY (username, data_type))
+            ''')
+            conn.commit()
+        
+        # Verify we can read from the table
+        try:
+            c.execute("SELECT COUNT(*) FROM user_data")
+            count = c.fetchone()[0]
+            print(f"DEBUG - Database contains {count} records")
+        except sqlite3.OperationalError:
+            print("ERROR - Could not read from user_data table, recreating...")
+            c.execute("DROP TABLE IF EXISTS user_data")
+            c.execute('''
+            CREATE TABLE IF NOT EXISTS user_data
+            (username TEXT, data_type TEXT, data TEXT, 
+            PRIMARY KEY (username, data_type))
+            ''')
+            conn.commit()
+        
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"ERROR - Database integrity check failed: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        return False
 
 def save_user_data(username, data_type, data):
     """Save user data to SQLite database"""
@@ -115,9 +165,15 @@ def load_user_data(username, data_type, default=None):
         conn.close()
         
         if result:
-            data = json.loads(result[0])
-            print(f"DEBUG - Successfully loaded {data_type} for user {username}")
-            return data
+            try:
+                data = json.loads(result[0])
+                print(f"DEBUG - Successfully loaded {data_type} for user {username}")
+                print(f"DEBUG - Data sample: {str(data)[:100]}...")
+                return data
+            except json.JSONDecodeError as e:
+                print(f"DEBUG - JSON decode error for {data_type}: {str(e)}")
+                print(f"DEBUG - Raw data: {result[0][:100]}...")
+                return default
         else:
             print(f"DEBUG - No {data_type} found for user {username}")
             return default
@@ -137,6 +193,32 @@ def load_user_transactions(username):
 
 def save_user_history(username, history):
     """Save user history to SQLite database"""
+    print(f"DEBUG - Saving history for user {username} with {len(history)} items")
+    # Ensure history is a list
+    if not isinstance(history, list):
+        print(f"DEBUG - Warning: history is not a list, it's a {type(history)}")
+        history = list(history) if hasattr(history, '__iter__') else [history]
+    
+    # Ensure each item in history is properly serializable
+    for i, report in enumerate(history):
+        if not isinstance(report, dict):
+            print(f"DEBUG - Warning: report {i} is not a dict, it's a {type(report)}")
+            continue
+        
+        # Ensure required keys exist
+        required_keys = ["number", "period", "transactions", "summary"]
+        for key in required_keys:
+            if key not in report:
+                print(f"DEBUG - Warning: report {i} is missing key '{key}'")
+                if key == "summary":
+                    report["summary"] = {"total_expenses": 0, "net_amount": 0}
+                elif key == "transactions":
+                    report["transactions"] = []
+                elif key == "number":
+                    report["number"] = f"Relatório {i+1}"
+                elif key == "period":
+                    report["period"] = "Período não especificado"
+    
     save_user_data(username, 'history', history)
 
 def load_user_history(username):
@@ -1313,8 +1395,10 @@ def generate_pdf_report(username, report_data):
     # Create a BytesIO object to store the PDF
     buffer = BytesIO()
     
-    # Create the PDF document
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    # Create the PDF document with wider margins to prevent text cutting
+    doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                           leftMargin=36, rightMargin=36, 
+                           topMargin=36, bottomMargin=36)
     elements = []
     
     # Define styles
@@ -1343,7 +1427,8 @@ def generate_pdf_report(username, report_data):
         ["Saldo Final", f"{format_currency(report_data['summary'].get('net_amount', 0))}"]
     ]
     
-    summary_table = Table(summary_data, colWidths=[300, 100])
+    # Adjust column widths for better fit
+    summary_table = Table(summary_data, colWidths=[300, 150])
     summary_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
@@ -1353,6 +1438,9 @@ def generate_pdf_report(username, report_data):
         ('BACKGROUND', (0, -1), (1, -1), colors.lightgrey),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertical alignment
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),    # Add padding
+        ('RIGHTPADDING', (0, 0), (-1, -1), 6),   # Add padding
     ]))
     elements.append(summary_table)
     elements.append(Spacer(1, 24))
@@ -1366,15 +1454,15 @@ def generate_pdf_report(username, report_data):
         
         for t in report_data['transactions']:
             transaction_data.append([
-                t['Date'],
-                t['Type'],
-                t['Category'],
-                t['Description'],
-                format_currency(t['Amount'])
+                t.get('Date', t.get('date', '')),
+                t.get('Type', t.get('type', '')),
+                t.get('Category', t.get('category', '')),
+                t.get('Description', t.get('description', '')),
+                format_currency(t.get('Amount', t.get('amount', 0)))
             ])
         
-        # Create the table
-        transaction_table = Table(transaction_data, colWidths=[80, 80, 100, 160, 80])
+        # Create the table with adjusted column widths and word wrapping
+        transaction_table = Table(transaction_data, colWidths=[70, 70, 90, 180, 70])
         transaction_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -1383,6 +1471,10 @@ def generate_pdf_report(username, report_data):
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Vertical alignment
+            ('LEFTPADDING', (0, 0), (-1, -1), 6),    # Add padding
+            ('RIGHTPADDING', (0, 0), (-1, -1), 6),   # Add padding
+            ('WORDWRAP', (0, 0), (-1, -1), True),    # Enable word wrapping
         ]))
         elements.append(transaction_table)
     
@@ -1411,34 +1503,38 @@ def get_pdf_download_link(pdf_data, filename):
     return href
 
 def auto_save_user_data():
-    """Automatically save user data if authenticated"""
-    if st.session_state.get("authenticated", False) and st.session_state.get("username"):
-        try:
-            if hasattr(st.session_state, "transactions"):
-                save_user_transactions(st.session_state.username, st.session_state.transactions)
-                print(f"Transações salvas para o usuário {st.session_state.username}")
-            
-            if hasattr(st.session_state, "history"):
-                save_user_history(st.session_state.username, st.session_state.history)
-                print(f"Histórico salvo para o usuário {st.session_state.username}")
-            
-            # Save current date range and report counter
-            if hasattr(st.session_state, "current_start_date") and hasattr(st.session_state, "current_end_date"):
-                save_user_dates(
-                    st.session_state.username, 
-                    st.session_state.current_start_date, 
-                    st.session_state.current_end_date,
-                    st.session_state.get("report_counter", 1)
-                )
-                print(f"Datas e contador de relatórios salvos para o usuário {st.session_state.username}")
-        except Exception as e:
-            print(f"Error in auto-save: {str(e)}")
-            print(f"Traceback: {traceback.format_exc()}")
+    """Auto-save all user data"""
+    if "username" in st.session_state and st.session_state.username:
+        username = st.session_state.username
+        
+        # Save transactions
+        if "transactions" in st.session_state:
+            save_user_transactions(username, st.session_state.transactions)
+            print(f"Transações salvas para o usuário {username}")
+        
+        # Save history
+        if "history" in st.session_state:
+            save_user_history(username, st.session_state.history)
+            print(f"Histórico salvo para o usuário {username}")
+        
+        # Save dates
+        if all(k in st.session_state for k in ["current_start_date", "current_end_date"]):
+            save_user_dates(
+                username, 
+                st.session_state.current_start_date, 
+                st.session_state.current_end_date,
+                st.session_state.report_counter if "report_counter" in st.session_state else 1
+            )
+            print(f"Datas e contador de relatórios salvos para o usuário {username}")
 
 def main():
     # Initialize the SQLite database
     init_db()
     
+    # Verify database integrity
+    verify_db_integrity()
+    
+    # Debug: Show current authentication state
     # Debug: Show current authentication state
     # st.write(f"Debug - Authenticated: {st.session_state.get('authenticated', False)}")
     # st.write(f"Debug - Username: {st.session_state.get('username', 'None')}")
@@ -1691,23 +1787,44 @@ def show_admin_tab():
             history = load_user_history(selected_user)
             if history:
                 for report in history:
-                    # Create a container for the expander and PDF button
-                    col1, col2 = st.columns([0.1, 0.9])
+                    # Create a container with fixed width columns to prevent overlap
+                    st.markdown("""
+                    <style>
+                    .download-button-container {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 10px;
+                    }
+                    .download-button {
+                        flex: 0 0 40px;
+                        margin-right: 15px;
+                    }
+                    .report-title {
+                        flex: 1;
+                        min-width: 0;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    </style>
+                    """, unsafe_allow_html=True)
                     
-                    with col1:
-                        # Add PDF download button with a more elegant design
-                        report_id = f"{selected_user}_{report['number'].replace(' ', '_')}"
-                        
-                        # Generate PDF report
-                        pdf_data = generate_pdf_report(selected_user, report)
-                        download_link = get_pdf_download_link(pdf_data, f"Relatorio_{report_id}")
-                        
-                        st.markdown(download_link, unsafe_allow_html=True)
+                    # Generate PDF report
+                    report_id = f"{selected_user}_{report['number'].replace(' ', '_')}"
+                    pdf_data = generate_pdf_report(selected_user, report)
+                    download_link = get_pdf_download_link(pdf_data, f"Relatorio_{report_id}")
                     
-                    with col2:
-                        expander = st.expander(f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})")
+                    # Create a custom layout with HTML/CSS
+                    report_title = f"{report['number']} - {format_currency(abs(report['summary']['net_amount']))} ({'A entregar' if report['summary']['net_amount'] >= 0 else 'A receber'})"
                     
-                    with expander:
+                    st.markdown(f"""
+                    <div class="download-button-container">
+                        <div class="download-button">{download_link}</div>
+                        <div class="report-title">{report_title}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Use the expander without a title since we've already displayed it
+                    with st.expander("Ver detalhes"):
                         # Create DataFrame from transactions
                         df_report = create_transaction_df(report['transactions'])
                         
@@ -2075,8 +2192,8 @@ def show_report_tab():
                     "period": f"{st.session_state.current_start_date.strftime('%Y-%m-%d')} a {st.session_state.current_end_date.strftime('%Y-%m-%d')}",
                     "transactions": df.to_dict("records"),
                     "summary": summary,
-                    'start_date': st.session_state.current_start_date,
-                    'end_date': st.session_state.current_end_date
+                    'start_date': st.session_state.current_start_date.strftime('%Y-%m-%d'),
+                    'end_date': st.session_state.current_end_date.strftime('%Y-%m-%d')
                 }
                 
                 # Converter para tipos serializáveis
