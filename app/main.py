@@ -653,7 +653,7 @@ def show_login_page():
                     
                     # Redirect to main page
                     st.session_state.page = "main"
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("Invalid username or password")
 
