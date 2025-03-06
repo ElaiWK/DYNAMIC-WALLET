@@ -15,7 +15,12 @@ def get_week_period(date=None):
     
     start_date = date - timedelta(days=date.weekday())
     end_date = start_date + timedelta(days=6)
-    return start_date.date(), end_date.date()
+    
+    # Return date objects, handling both datetime and date inputs
+    if hasattr(start_date, 'date'):
+        return start_date.date(), end_date.date()
+    else:
+        return start_date, end_date
 
 def is_late_submission(transaction_date):
     """Check if a transaction is being submitted after its period ended."""
@@ -23,113 +28,73 @@ def is_late_submission(transaction_date):
     _, period_end = get_week_period(transaction_date)
     return current_date > period_end
 
-def calculate_meal_expense(total_amount, num_people, meal_type):
+def calculate_meal_expense(amount_per_person, num_people):
     """Calculate meal expense with validation."""
-    max_allowed = num_people * MAX_MEAL_ALLOWANCE_PER_PERSON
-    actual_amount = min(total_amount, max_allowed)
-    return actual_amount, None
+    if amount_per_person > MAX_MEAL_ALLOWANCE_PER_PERSON:
+        return num_people * MAX_MEAL_ALLOWANCE_PER_PERSON, None
+    total = amount_per_person * num_people
+    return total, None
 
-def calculate_hr_expense(role):
-    """
-    Calculate HR expense based on role's fixed rate.
-    
-    Args:
-        role (str): The role from HR_RATES
-        
-    Returns:
-        tuple: (amount, error_message)
-    """
+def calculate_hr_expense(hours, role):
+    """Calculate HR expense based on role and hours."""
     if role not in HR_RATES:
-        return 0, "Função inválida"
-    
-    return HR_RATES[role], None
+        return None, "Função inválida selecionada"
+    rate = HR_RATES[role]
+    total = hours * rate
+    return total, None
 
 def format_currency(amount):
     """Format amount as currency."""
     return f"€{amount:.2f}"
 
 def create_transaction_df(transactions):
-    """Create a pandas DataFrame from transactions list, handling different key formats."""
+    """Create a pandas DataFrame from transactions list."""
     if not transactions:
-        return pd.DataFrame(columns=["Date", "Type", "Category", "Description", "Amount"])
+        return pd.DataFrame(columns=["date", "type", "category", "description", "amount"])
     
-    # Normalize transaction keys
-    normalized_transactions = []
-    for t in transactions:
-        normalized = {}
-        
-        # Handle Date/date
-        if "Date" in t:
-            normalized["Date"] = t["Date"]
-        elif "date" in t:
-            normalized["Date"] = t["date"]
-        else:
-            normalized["Date"] = "Unknown"
-            
-        # Handle Type/type
-        if "Type" in t:
-            normalized["Type"] = t["Type"]
-        elif "type" in t:
-            normalized["Type"] = t["type"]
-        else:
-            normalized["Type"] = "Unknown"
-            
-        # Handle Category/category
-        if "Category" in t:
-            normalized["Category"] = t["Category"]
-        elif "category" in t:
-            normalized["Category"] = t["category"]
-        else:
-            normalized["Category"] = "Unknown"
-            
-        # Handle Description/description
-        if "Description" in t:
-            normalized["Description"] = t["Description"]
-        elif "description" in t:
-            normalized["Description"] = t["description"]
-        else:
-            normalized["Description"] = ""
-            
-        # Handle Amount/amount
-        if "Amount" in t:
-            normalized["Amount"] = float(t["Amount"])
-        elif "amount" in t:
-            normalized["Amount"] = float(t["amount"])
-        else:
-            normalized["Amount"] = 0.0
-            
-        normalized_transactions.append(normalized)
+    # Convert to DataFrame and ensure lowercase column names
+    df = pd.DataFrame(transactions)
     
-    return pd.DataFrame(normalized_transactions)
+    # Rename columns if they are not lowercase
+    column_mapping = {
+        'Date': 'date',
+        'Type': 'type',
+        'Category': 'category',
+        'Description': 'description',
+        'Amount': 'amount'
+    }
+    
+    # Apply mapping to any columns that exist in the mapping
+    for old_col, new_col in column_mapping.items():
+        if old_col in df.columns:
+            df.rename(columns={old_col: new_col}, inplace=True)
+    
+    return df
 
 def get_period_summary(df):
-    """Calculate summary statistics for a period."""
+    """Get a summary of the transactions for the current period."""
     if df.empty:
         return {
+            "total_expenses": 0,
             "total_income": 0,
-            "total_expense": 0,
-            "total_expenses": 0,  # Duplicado para compatibilidade
-            "net_amount": 0,
-            "total_meals": 0,
-            "total_transport": 0,
-            "total_other": 0
+            "net_amount": 0
         }
     
-    # Calcular totais por tipo
-    expenses = df[df["Type"] == "Saída"]["Amount"].sum()
-    income = df[df["Type"] == "Entrada"]["Amount"].sum()
+    # Ensure the column names exist
+    if "type" not in df.columns:
+        print(f"DEBUG - DataFrame columns: {df.columns}")
+        # Try to fix column names or use reasonable defaults
+        return {
+            "total_expenses": 0,
+            "total_income": 0,
+            "net_amount": 0
+        }
     
-    # Calcular totais por categoria de despesa
-    meals = df[(df["Type"] == "Saída") & (df["Category"] == "Refeição")]["Amount"].sum() if "Category" in df.columns else 0
-    transport = df[(df["Type"] == "Saída") & (df["Category"] == "Transporte")]["Amount"].sum() if "Category" in df.columns else 0
-    other = df[(df["Type"] == "Saída") & (df["Category"] == "Outro")]["Amount"].sum() if "Category" in df.columns else 0
+    expenses = df[df["type"] == "Saída"]["amount"].sum()
+    income = df[df["type"] == "Entrada"]["amount"].sum()
     
     return {
+        "total_expenses": expenses,
         "total_income": income,
-        "total_expense": expenses,
-        "total_expenses": expenses,  # Duplicado para compatibilidade
-        "net_amount": income - expenses,
-        "total_meals": meals,
-        "total_transport": transport,
-        "total_other": other
+        "net_amount": income - expenses
     } 

@@ -9,13 +9,13 @@ class TransactionType(Enum):
 class ExpenseCategory(Enum):
     MEAL = "Refeição"
     HR = "Recursos Humanos"
-    OTHER = "Compra"
-    DELIVERY = "Entreguei"
+    PURCHASE = "Compra"
+    DELIVERED = "Entreguei"
 
 # Income Categories
 class IncomeCategory(Enum):
     SERVICE = "Serviço"
-    DELIVERY = "Recebi"
+    RECEIVED = "Recebi"
 
 # Meal Types
 class MealType(Enum):
@@ -24,14 +24,12 @@ class MealType(Enum):
 
 # HR Rates (€/hour)
 HR_RATES = {
-    "": 0,  # Empty default option
     "Júnior": 35,
-    "Sénior": 40,
     "Júnior mais de 10 horas": 40,
+    "Sénior": 40,
     "Sénior mais de 10 horas": 50,
     "Condutor": 55,
-    "Condutor 10 mais de 10 horas": 65,
-    "Monitor": 35,
+    "Condutor mais de 10 horas": 65,
     "Operador": 40,
     "Pinturas": 55,
     "Pinturas e Kit": 65,
@@ -44,7 +42,7 @@ HR_RATES = {
 MAX_MEAL_ALLOWANCE_PER_PERSON = 12  # €
 
 # Date Format
-DATE_FORMAT = "%d/%m/%Y"
+DATE_FORMAT = "%Y-%m-%d"
 
 # CSV Export Headers
 TRANSACTION_HEADERS = [
