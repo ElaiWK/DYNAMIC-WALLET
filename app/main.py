@@ -606,14 +606,48 @@ def get_week_dates(date):
     return monday, sunday
 
 def format_date_range(start_date, end_date):
+    """Format date range for display, handling both string and datetime objects"""
+    # Convert string dates to datetime objects if needed
+    if isinstance(start_date, str):
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            # Try alternative format
+            start_date = datetime.strptime(start_date, '%d/%m/%Y').date()
+    
+    if isinstance(end_date, str):
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            # Try alternative format
+            end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+    
     return f"De {start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}"
 
 def get_next_week_dates(current_end_date):
+    """Get the next week's date range, handling both string and datetime objects"""
+    # Convert string date to datetime object if needed
+    if isinstance(current_end_date, str):
+        try:
+            current_end_date = datetime.strptime(current_end_date, '%Y-%m-%d').date()
+        except ValueError:
+            # Try alternative format
+            current_end_date = datetime.strptime(current_end_date, '%d/%m/%Y').date()
+    
     next_monday = current_end_date + timedelta(days=1)
     next_sunday = next_monday + timedelta(days=6)
     return next_monday, next_sunday
 
 def is_submission_late(end_date):
+    """Check if submission is late, handling both string and datetime objects"""
+    # Convert string date to datetime object if needed
+    if isinstance(end_date, str):
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            # Try alternative format
+            end_date = datetime.strptime(end_date, '%d/%m/%Y').date()
+    
     return datetime.now().date() > end_date
 
 # Initialize session state
