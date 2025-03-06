@@ -56,12 +56,6 @@ from utils.helpers import (
 if "first_load" not in st.session_state:
     st.session_state.first_load = True
 
-# Page config
-    page_title="MD Wallet - Expense Tracker",
-    page_icon="💰",
-    layout="wide"
-)
-
 # CRITICAL: Always reset authentication state when the script loads
 # This is essential for both local and cloud deployments
 if 'authenticated' not in st.session_state:
