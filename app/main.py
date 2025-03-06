@@ -2361,10 +2361,20 @@ def show_report_tab():
         if st.button("Submeter Relatório"):
             # Verificar se a data final é igual ou anterior à data atual
             today = datetime.now().date()
-            if st.session_state.current_end_date > today:
-                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({st.session_state.current_end_date.strftime('%Y-%m-%d')}) deve ser igual ou anterior à data atual ({today.strftime('%Y-%m-%d')}).")
+            
+            # Convert current_end_date to datetime object if it's a string
+            current_end_date = st.session_state.current_end_date
+            if isinstance(current_end_date, str):
+                try:
+                    current_end_date = datetime.strptime(current_end_date, '%Y-%m-%d').date()
+                except ValueError:
+                    # Try alternative format
+                    current_end_date = datetime.strptime(current_end_date, '%d/%m/%Y').date()
+            
+            if current_end_date > today:
+                st.error(f"Não é possível submeter relatórios com datas futuras. A data final ({current_end_date.strftime('%Y-%m-%d')}) deve ser igual ou anterior à data atual ({today.strftime('%Y-%m-%d')}).")
             # Verificar se a data final é anterior a 09/02/2025
-            elif st.session_state.current_end_date < datetime.strptime("09/02/2025", "%d/%m/%Y").date():
+            elif current_end_date < datetime.strptime("09/02/2025", "%d/%m/%Y").date():
                 st.error("Não é possível submeter o relatório ainda. O relatório só pode ser submetido a partir de 09/02/2025.")
             else:
                 # Create a unique report number based on the current date
@@ -2372,13 +2382,21 @@ def show_report_tab():
                 st.session_state.report_counter += 1
                 
                 # Create a report object
+                # Convert dates to datetime objects if they're strings
+                current_start_date = st.session_state.current_start_date
+                if isinstance(current_start_date, str):
+                    try:
+                        current_start_date = datetime.strptime(current_start_date, '%Y-%m-%d').date()
+                    except ValueError:
+                        current_start_date = datetime.strptime(current_start_date, '%d/%m/%Y').date()
+                
                 report = {
                     "number": report_number,
-                    "period": f"{st.session_state.current_start_date.strftime('%Y-%m-%d')} a {st.session_state.current_end_date.strftime('%Y-%m-%d')}",
+                    "period": f"{current_start_date.strftime('%Y-%m-%d')} a {current_end_date.strftime('%Y-%m-%d')}",
                     "transactions": df.to_dict("records"),
                     "summary": summary,
-                    'start_date': st.session_state.current_start_date.strftime('%Y-%m-%d'),
-                    'end_date': st.session_state.current_end_date.strftime('%Y-%m-%d')
+                    'start_date': current_start_date.strftime('%Y-%m-%d'),
+                    'end_date': current_end_date.strftime('%Y-%m-%d')
                 }
                 
                 # Converter para tipos serializáveis
@@ -2420,9 +2438,14 @@ def show_report_tab():
                         # Converter a data da transação para objeto date
                         try:
                             transaction_date = datetime.strptime(t[date_key], "%Y-%m-%d").date()
+                            
+                            # Ensure current_start_date and current_end_date are datetime objects
+                            period_start = current_start_date  # Already converted above
+                            period_end = current_end_date  # Already converted above
+                            
                             # Verificar se a data está fora do período atual
-                            if not (transaction_date >= st.session_state.current_start_date and 
-                                   transaction_date <= st.session_state.current_end_date):
+                            if not (transaction_date >= period_start and 
+                                   transaction_date <= period_end):
                                 filtered_transactions.append(t)
                         except (ValueError, TypeError) as e:
                             # Se houver erro ao converter a data, manter a transação
@@ -2435,7 +2458,7 @@ def show_report_tab():
                     save_user_transactions(st.session_state.username, st.session_state.transactions)
                 
                 # Update to next week's dates
-                next_start, next_end = get_next_week_dates(st.session_state.current_end_date)
+                next_start, next_end = get_next_week_dates(current_end_date)  # Using the already converted current_end_date
                 st.session_state.current_start_date = next_start
                 st.session_state.current_end_date = next_end
                 
