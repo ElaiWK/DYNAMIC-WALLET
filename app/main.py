@@ -184,16 +184,64 @@ def load_user_data(username, data_type, default=None):
 
 # Replace file-based functions with SQLite functions
 def save_user_transactions(username, transactions):
-    """Save user transactions to SQLite database"""
+    """Save user transactions to both SQLite database and file"""
+    print(f"DEBUG - Saving transactions for user {username} with {len(transactions)} items")
+    
+    # Save to SQLite
     save_user_data(username, 'transactions', transactions)
+    
+    # Also save to file as backup
+    try:
+        user_dir = get_user_dir(username)
+        transactions_file = os.path.join(user_dir, "transactions.json")
+        
+        with open(transactions_file, 'w') as f:
+            json.dump(convert_to_serializable(transactions), f, indent=2)
+            print(f"DEBUG - Successfully saved transactions to file for user {username}")
+    except Exception as e:
+        print(f"DEBUG - Error saving transactions to file: {str(e)}")
 
 def load_user_transactions(username):
-    """Load user transactions from SQLite database"""
-    return load_user_data(username, 'transactions', [])
+    """Load user transactions from SQLite database with file-based fallback"""
+    try:
+        # First try to load from SQLite
+        transactions_from_db = load_user_data(username, 'transactions', [])
+        
+        if transactions_from_db and len(transactions_from_db) > 0:
+            print(f"DEBUG - Successfully loaded transactions from SQLite for user {username}")
+            return transactions_from_db
+        
+        # If SQLite failed or returned empty, try file-based approach
+        print(f"DEBUG - SQLite transactions empty, trying file-based approach for {username}")
+        user_dir = get_user_dir(username)
+        transactions_file = os.path.join(user_dir, "transactions.json")
+        
+        if os.path.exists(transactions_file):
+            try:
+                with open(transactions_file, 'r') as f:
+                    transactions_data = json.load(f)
+                    print(f"DEBUG - Successfully loaded transactions from file for user {username}")
+                    print(f"DEBUG - File-based transactions has {len(transactions_data)} items")
+                    
+                    # Save to SQLite for future use
+                    save_user_data(username, 'transactions', transactions_data)
+                    
+                    return transactions_data
+            except Exception as e:
+                print(f"DEBUG - Error loading transactions from file: {str(e)}")
+        
+        # If all else fails, return empty list
+        print(f"DEBUG - No transactions found for user {username}")
+        return []
+    except Exception as e:
+        print(f"DEBUG - Error in load_user_transactions: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        return []
 
 def save_user_history(username, history):
-    """Save user history to SQLite database"""
+    """Save user history to both SQLite database and file"""
     print(f"DEBUG - Saving history for user {username} with {len(history)} items")
+    
     # Ensure history is a list
     if not isinstance(history, list):
         print(f"DEBUG - Warning: history is not a list, it's a {type(history)}")
@@ -219,27 +267,114 @@ def save_user_history(username, history):
                 elif key == "period":
                     report["period"] = "Período não especificado"
     
+    # Save to SQLite
     save_user_data(username, 'history', history)
+    
+    # Also save to file as backup
+    try:
+        user_dir = get_user_dir(username)
+        history_file = os.path.join(user_dir, "history.json")
+        
+        with open(history_file, 'w') as f:
+            json.dump(convert_to_serializable(history), f, indent=2)
+            print(f"DEBUG - Successfully saved history to file for user {username}")
+    except Exception as e:
+        print(f"DEBUG - Error saving history to file: {str(e)}")
 
 def load_user_history(username):
-    """Load user history from SQLite database"""
-    return load_user_data(username, 'history', [])
+    """Load user history from SQLite database with file-based fallback"""
+    try:
+        # First try to load from SQLite
+        history_from_db = load_user_data(username, 'history', [])
+        
+        if history_from_db and len(history_from_db) > 0:
+            print(f"DEBUG - Successfully loaded history from SQLite for user {username}")
+            return history_from_db
+        
+        # If SQLite failed or returned empty, try file-based approach
+        print(f"DEBUG - SQLite history empty, trying file-based approach for {username}")
+        user_dir = get_user_dir(username)
+        history_file = os.path.join(user_dir, "history.json")
+        
+        if os.path.exists(history_file):
+            try:
+                with open(history_file, 'r') as f:
+                    history_data = json.load(f)
+                    print(f"DEBUG - Successfully loaded history from file for user {username}")
+                    print(f"DEBUG - File-based history has {len(history_data)} items")
+                    
+                    # Save to SQLite for future use
+                    save_user_history(username, history_data)
+                    
+                    return history_data
+            except Exception as e:
+                print(f"DEBUG - Error loading history from file: {str(e)}")
+        
+        # If all else fails, return empty list
+        print(f"DEBUG - No history found for user {username}")
+        return []
+    except Exception as e:
+        print(f"DEBUG - Error in load_user_history: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        return []
 
 def save_user_dates(username, start_date, end_date, report_counter=1):
-    """Save user date range and report counter to SQLite database"""
+    """Save user date range and report counter to both SQLite database and file"""
     dates_data = {
         "start_date": start_date,
         "end_date": end_date,
         "report_counter": report_counter
     }
+    
+    # Save to SQLite
     save_user_data(username, 'dates', dates_data)
+    
+    # Also save to file as backup
+    try:
+        user_dir = get_user_dir(username)
+        dates_file = os.path.join(user_dir, "dates.json")
+        
+        with open(dates_file, 'w') as f:
+            json.dump(convert_to_serializable(dates_data), f, indent=2)
+            print(f"DEBUG - Successfully saved dates to file for user {username}")
+    except Exception as e:
+        print(f"DEBUG - Error saving dates to file: {str(e)}")
 
 def load_user_dates(username):
-    """Load user date range and report counter from SQLite database"""
-    dates_data = load_user_data(username, 'dates', None)
-    if dates_data:
-        return dates_data.get('start_date'), dates_data.get('end_date'), dates_data.get('report_counter', 1)
-    return None
+    """Load user date range and report counter from SQLite database with file-based fallback"""
+    try:
+        # First try to load from SQLite
+        dates_from_db = load_user_data(username, 'dates', None)
+        
+        if dates_from_db:
+            print(f"DEBUG - Successfully loaded dates from SQLite for user {username}")
+            return dates_from_db.get('start_date'), dates_from_db.get('end_date'), dates_from_db.get('report_counter', 1)
+        
+        # If SQLite failed or returned empty, try file-based approach
+        print(f"DEBUG - SQLite dates empty, trying file-based approach for {username}")
+        user_dir = get_user_dir(username)
+        dates_file = os.path.join(user_dir, "dates.json")
+        
+        if os.path.exists(dates_file):
+            try:
+                with open(dates_file, 'r') as f:
+                    dates_data = json.load(f)
+                    print(f"DEBUG - Successfully loaded dates from file for user {username}")
+                    
+                    # Save to SQLite for future use
+                    save_user_data(username, 'dates', dates_data)
+                    
+                    return dates_data.get('start_date'), dates_data.get('end_date'), dates_data.get('report_counter', 1)
+            except Exception as e:
+                print(f"DEBUG - Error loading dates from file: {str(e)}")
+        
+        # If all else fails, return None
+        print(f"DEBUG - No dates found for user {username}")
+        return None
+    except Exception as e:
+        print(f"DEBUG - Error in load_user_dates: {str(e)}")
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        return None
 
 # User authentication functions
 def get_users_file_path():
@@ -420,27 +555,43 @@ def show_login_page():
                     print(f"DEBUG - Login successful for user: {username}")
                     print(f"DEBUG - Is admin: {st.session_state.is_admin}")
                     
+                    # Clear existing data first to prevent mixing
+                    for key in list(st.session_state.keys()):
+                        if key not in ["authenticated", "username", "is_admin", "page", "first_load"]:
+                            del st.session_state[key]
+                    
                     # Load user data
                     print(f"DEBUG - Loading user data for: {username}")
                     
-                    if "transactions" not in st.session_state:
-                        print("DEBUG - Loading transactions")
-                        st.session_state.transactions = load_user_transactions(username)
-                        print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
+                    # Load transactions
+                    print("DEBUG - Loading transactions")
+                    st.session_state.transactions = load_user_transactions(username)
+                    print(f"DEBUG - Loaded {len(st.session_state.transactions)} transactions")
                     
-                    if "history" not in st.session_state:
-                        print("DEBUG - Loading history")
-                        st.session_state.history = load_user_history(username)
-                        print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
+                    # Load history
+                    print("DEBUG - Loading history")
+                    st.session_state.history = load_user_history(username)
+                    print(f"DEBUG - Loaded {len(st.session_state.history)} history items")
+                    print(f"DEBUG - History data: {str(st.session_state.history)[:200]}...")
                     
-                    if "history" not in st.session_state:
-                        st.session_state.history = []
+                    # Load dates
+                    dates = load_user_dates(username)
+                    if dates:
+                        start_date, end_date, report_counter = dates
+                        st.session_state.current_start_date = start_date
+                        st.session_state.current_end_date = end_date
+                        st.session_state.report_counter = report_counter
+                        print(f"DEBUG - Loaded dates: {start_date} to {end_date}, counter: {report_counter}")
+                    else:
+                        # Set default dates if not found
+                        today = datetime.now().date()
+                        st.session_state.current_start_date, st.session_state.current_end_date = get_week_dates(today)
+                        st.session_state.report_counter = 1
+                        print(f"DEBUG - Set default dates: {st.session_state.current_start_date} to {st.session_state.current_end_date}")
                 
                     st.session_state.user_data_loaded = True
                     print("DEBUG - User data loaded flag set to True")
-                
-                    # Show updated session state
-                    # st.write("Debug - Updated session state:", {k: v for k, v in st.session_state.items() if k not in ['login_password']})
+                    print(f"DEBUG - Session state keys: {list(st.session_state.keys())}")
                 
                     # Force rerun to show the main app
                     st.rerun()
@@ -2274,26 +2425,23 @@ def show_report_tab():
         st.info("Não há transações registradas para o período atual.")
 
 def convert_to_serializable(obj):
-    """
-    Converte tipos complexos (como NumPy, Pandas, etc.) para tipos Python nativos serializáveis.
-    Esta função deve ser usada antes de serializar qualquer objeto para JSON.
-    """
-    if isinstance(obj, dict):
-        return {k: convert_to_serializable(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_to_serializable(item) for item in obj]
-    elif isinstance(obj, np.int64):
+    """Convert complex data types to JSON serializable types"""
+    if isinstance(obj, (np.int64, np.int32, np.int16, np.int8)):
         return int(obj)
-    elif isinstance(obj, np.float64):
+    elif isinstance(obj, (np.float64, np.float32, np.float16)):
         return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return convert_to_serializable(obj.tolist())
-    elif isinstance(obj, pd.DataFrame):
-        return convert_to_serializable(obj.to_dict('records'))
-    elif isinstance(obj, pd.Series):
-        return convert_to_serializable(obj.to_dict())
-    elif hasattr(obj, 'strftime'):  # Para objetos datetime
-        return obj.strftime('%Y-%m-%d')
+    elif isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    elif isinstance(obj, (pd.DataFrame)):
+        return obj.to_dict('records')
+    elif isinstance(obj, (np.ndarray)):
+        return obj.tolist()
+    elif isinstance(obj, (pd.Series)):
+        return obj.to_list()
+    elif isinstance(obj, dict):
+        return {k: convert_to_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [convert_to_serializable(i) for i in obj]
     else:
         return obj
 
