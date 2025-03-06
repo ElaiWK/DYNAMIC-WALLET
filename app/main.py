@@ -641,7 +641,7 @@ def show_form():
                         meal_type
                     )
                     if not error:
-                        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)}, Valor por pessoa: {format_currency(calculated_amount)})"
+                        description = f"{meal_type} com {names_str} (Fatura: {format_currency(st.session_state.meal_total_amount)})"
                         save_transaction(
                             st.session_state.meal_date,
                             TransactionType.EXPENSE.value, 
