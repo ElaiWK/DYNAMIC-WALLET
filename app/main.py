@@ -52,8 +52,11 @@ from utils.helpers import (
     get_period_summary
 )
 
+# Initialize session state for first load
+if "first_load" not in st.session_state:
+    st.session_state.first_load = True
+
 # Page config
-st.set_page_config(
     page_title="MD Wallet - Expense Tracker",
     page_icon="💰",
     layout="wide"
