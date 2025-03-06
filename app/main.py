@@ -17,6 +17,7 @@ import time
 import shutil
 import yaml
 import hashlib
+import sqlite3
 from datetime import datetime, timedelta, date
 import base64
 from io import BytesIO
@@ -1522,6 +1523,45 @@ def convert_to_serializable(obj):
         return [convert_to_serializable(i) for i in obj]
     else:
         return obj
+
+def main():
+    """Main function"""
+    # Add custom CSS
+    st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Initialize session state variables if they don't exist
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+    
+    if "page" not in st.session_state:
+        st.session_state.page = "login"
+    
+    # Debug message
+    print(f"DEBUG - Current page: {st.session_state.page}")
+    print(f"DEBUG - Authenticated: {st.session_state.authenticated}")
+    
+    # Check if users.json exists, if not, create it with default users
+    if not os.path.exists(get_users_file_path()):
+        initialize_default_users()
+    
+    # Create data directory if it doesn't exist
+    os.makedirs(get_user_data_dir(), exist_ok=True)
+    
+    # Auto-save user data on each rerun
+    auto_save_user_data()
+    
+    # Show appropriate page based on session state
+    if not st.session_state.authenticated:
+        show_login_page()
+    else:
+        show_main_page()
 
 if __name__ == "__main__":
     try:
